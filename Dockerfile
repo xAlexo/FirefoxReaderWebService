@@ -10,11 +10,11 @@ RUN apt-get update && apt-get install -y \
     libnspr4 libnss3 lsb-release xdg-utils libxss1 libdbus-glib-1-2 \
     curl unzip wget xvfb
 
-ENV GECKODRIVER_VERSION v0.33.0
-RUN wget https://github.com/mozilla/geckodriver/releases/download/$GECKODRIVER_VERSION/geckodriver-$GECKODRIVER_VERSION-linux64.tar.gz && \
+RUN apt-get install -y jq && \
+    GECKODRIVER_VERSION=$(curl -s https://api.github.com/repos/mozilla/geckodriver/releases/latest | jq -r .tag_name) && \
+    wget https://github.com/mozilla/geckodriver/releases/download/$GECKODRIVER_VERSION/geckodriver-$GECKODRIVER_VERSION-linux64.tar.gz && \
     tar -zxf geckodriver-$GECKODRIVER_VERSION-linux64.tar.gz -C /usr/local/bin && \
     chmod +x /usr/local/bin/geckodriver && \
-    ls -l . && \
     rm geckodriver-$GECKODRIVER_VERSION-linux64.tar.gz
 
 RUN FIREFOX_SETUP=firefox-setup.tar.bz2 && \
@@ -23,6 +23,10 @@ RUN FIREFOX_SETUP=firefox-setup.tar.bz2 && \
     tar xjf $FIREFOX_SETUP -C /opt/ && \
     ln -s /opt/firefox/firefox /usr/bin/firefox && \
     rm $FIREFOX_SETUP
+
+RUN rm -rf /var/lib/apt/lists/* && \
+    apt-get clean && \
+    rm -rf /tmp/* /var/tmp/*
 
 RUN pip3 install selenium pyvirtualdisplay Selenium-Screenshot fastapi uvicorn telegraph[aio] html-telegraph-poster
 
