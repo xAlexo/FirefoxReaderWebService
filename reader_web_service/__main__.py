@@ -12,5 +12,8 @@ app = FastAPI()
 @app.get("/")
 async def root(url, ):
     loop = asyncio.get_running_loop()
-    html = await loop.run_in_executor(None, read_by_firefox, url)
-    return JSONResponse(content=jsonable_encoder({"html": html}))
+    data = await loop.run_in_executor(None, read_by_firefox, url)
+    return JSONResponse(content=jsonable_encoder({
+        "title": data['title'],
+        "html": data['content'],
+    }))
