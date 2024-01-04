@@ -2,6 +2,13 @@
 
 
 
+## v0.2.1 (2024-01-04)
+
+### Fix
+
+* fix: add requirement ([`1cf5662`](https://github.com/xAlexo/FirefoxReaderWebService/commit/1cf5662981e914a7278b94a30e62a23e94b66f02))
+
+
 ## v0.2.0 (2024-01-04)
 
 ### Feature
