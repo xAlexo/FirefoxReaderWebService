@@ -2,6 +2,13 @@
 
 
 
+## v0.2.3 (2024-01-04)
+
+### Fix
+
+* fix: getting content ([`fa251d4`](https://github.com/xAlexo/FirefoxReaderWebService/commit/fa251d4f407ea2e493c9888b4b30341f756c35ef))
+
+
 ## v0.2.2 (2024-01-04)
 
 ### Fix
