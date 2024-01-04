@@ -1,4 +1,4 @@
-FROM python:3.11 AS builder
+FROM python:3.11
 
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
@@ -24,11 +24,6 @@ RUN FIREFOX_SETUP=firefox-setup.tar.bz2 && \
     rm $FIREFOX_SETUP
 
 RUN pip3 install selenium pyvirtualdisplay Selenium-Screenshot fastapi uvicorn telegraph[aio] html-telegraph-poster loguru
-
-FROM python:3.11
-
-COPY --from=builder /usr/local /usr/local
-COPY --from=builder /opt /opt
 
 COPY . /app
 
