@@ -2,6 +2,13 @@
 
 
 
+## v0.2.2 (2024-01-04)
+
+### Fix
+
+* fix: dockerfile ([`7505161`](https://github.com/xAlexo/FirefoxReaderWebService/commit/75051613f36bd2ec2458d0dd28e98c20a583378d))
+
+
 ## v0.2.1 (2024-01-04)
 
 ### Fix
