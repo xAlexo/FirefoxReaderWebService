@@ -2,6 +2,13 @@
 
 
 
+## v0.3.0 (2024-01-05)
+
+### Feature
+
+* feat: getting html without reading mode ([`fef5f7c`](https://github.com/xAlexo/FirefoxReaderWebService/commit/fef5f7c6c149643e9bad8d403d7cb588498f5157))
+
+
 ## v0.2.3 (2024-01-04)
 
 ### Fix
