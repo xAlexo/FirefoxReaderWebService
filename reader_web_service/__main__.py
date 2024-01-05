@@ -17,3 +17,13 @@ async def root(url, ):
         "title": data['title'],
         "html": data['content'],
     }))
+
+
+@app.get("/html")
+async def root(url, ):
+    loop = asyncio.get_running_loop()
+    data = await loop.run_in_executor(None, read_by_firefox, url, False)
+    return JSONResponse(content=jsonable_encoder({
+        "title": data['title'],
+        "html": data['content'],
+    }))
