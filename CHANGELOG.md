@@ -2,6 +2,13 @@
 
 
 
+## v0.3.1 (2024-02-08)
+
+### Fix
+
+* fix: get content from firefox ([`02297ad`](https://github.com/xAlexo/FirefoxReaderWebService/commit/02297ad2bcdfff1802cdd89b99a32a8fa454de5a))
+
+
 ## v0.3.0 (2024-01-05)
 
 ### Feature
