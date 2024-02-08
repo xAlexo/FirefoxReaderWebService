@@ -25,13 +25,13 @@ def read_by_firefox(url, reader=True):
     try:
         if reader:
             WebDriverWait(browser, 30).until(
-                ec.presence_of_element_located((By.ID, 'article'))
+                ec.presence_of_element_located((By.CLASS_NAME, 'reader-title'))
             )
             return {
                 'title': browser.find_element(
                     By.CLASS_NAME, 'reader-title').get_attribute('innerHTML'),
                 'content': browser.find_element(
-                    By.ID, 'article').get_attribute('innerHTML').strip(),
+                    By.CLASS_NAME, 'content').get_attribute('innerHTML').strip(),
             }
 
         return {
