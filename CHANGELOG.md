@@ -2,6 +2,13 @@
 
 
 
+## v0.3.2 (2024-02-11)
+
+### Fix
+
+* fix: catch content not found ([`38f212d`](https://github.com/xAlexo/FirefoxReaderWebService/commit/38f212d7ecb2a552e0f88e021918528dd0c9a6f1))
+
+
 ## v0.3.1 (2024-02-08)
 
 ### Fix
