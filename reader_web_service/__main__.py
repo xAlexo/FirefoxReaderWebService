@@ -13,6 +13,11 @@ app = FastAPI()
 async def root(url, ):
     loop = asyncio.get_running_loop()
     data = await loop.run_in_executor(None, read_by_firefox, url)
+    if not data:
+        return JSONResponse(content=jsonable_encoder({
+            "error": "reader not found",
+        }))
+
     return JSONResponse(content=jsonable_encoder({
         "title": data['title'],
         "html": data['content'],
@@ -23,6 +28,11 @@ async def root(url, ):
 async def root(url, ):
     loop = asyncio.get_running_loop()
     data = await loop.run_in_executor(None, read_by_firefox, url, False)
+    if not data:
+        return JSONResponse(content=jsonable_encoder({
+            "error": "reader not found",
+        }))
+
     return JSONResponse(content=jsonable_encoder({
         "title": data['title'],
         "html": data['content'],
