@@ -1,9 +1,9 @@
+from loguru import logger as _log
 from pyvirtualdisplay import Display
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.wait import WebDriverWait
-from loguru import logger as _log
 
 READER_URL = 'about:reader?url={}'
 
