@@ -2,6 +2,13 @@
 
 
 
+## v0.4.0 (2024-02-12)
+
+### Feature
+
+* feat: add async-timeout ([`64beb4a`](https://github.com/xAlexo/FirefoxReaderWebService/commit/64beb4ad33f58de8f1210af34659a2d0b8620f75))
+
+
 ## v0.3.3 (2024-02-12)
 
 ### Fix
