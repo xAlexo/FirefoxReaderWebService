@@ -2,6 +2,13 @@
 
 
 
+## v0.3.3 (2024-02-12)
+
+### Fix
+
+* fix: return 400 if error ([`154a576`](https://github.com/xAlexo/FirefoxReaderWebService/commit/154a576e420aef90743723b9ab8bf2ca6f2273ab))
+
+
 ## v0.3.2 (2024-02-11)
 
 ### Fix
