@@ -2,6 +2,13 @@
 
 
 
+## v0.4.5 (2024-02-12)
+
+### Fix
+
+* fix: one timeout ([`7d49018`](https://github.com/xAlexo/FirefoxReaderWebService/commit/7d490187d15cd0084b851254478ded5f29c9d6a8))
+
+
 ## v0.4.4 (2024-02-12)
 
 ### Fix
