@@ -9,6 +9,7 @@ packages = [{include = "reader_web_service"}]
 [tool.poetry.dependencies]
 python = "^3.11"
 loguru = "^0.7.2"
+async-timeout = "^4.0.3"
 
 [build-system]
 requires = ["poetry-core"]

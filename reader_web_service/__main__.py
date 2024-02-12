@@ -1,7 +1,7 @@
 import asyncio
-from asyncio import timeout
 from json import dumps
 
+from async_timeout import timeout
 from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
@@ -17,7 +17,7 @@ async def root(url, ):
     loop = asyncio.get_running_loop()
 
     data = None
-    with timeout(25):
+    async with timeout(25):
         data = await loop.run_in_executor(None, read_by_firefox, url)
         data_debug = dumps(
             data, indent=4, ensure_ascii=False, sort_keys=True, default=str)
@@ -39,7 +39,7 @@ async def root(url, ):
     loop = asyncio.get_running_loop()
 
     data = None
-    with timeout(25):
+    async with timeout(25):
         data = await loop.run_in_executor(None, read_by_firefox, url, False)
 
     if not data:
