@@ -23,10 +23,17 @@ def read_by_firefox(url, reader=True):
     browser.get(url)
 
     try:
-        WebDriverWait(browser, 20).until(
-            ec.presence_of_element_located((By.CLASS_NAME, 'page'))
-        )
         if reader:
+            try:
+                WebDriverWait(browser, 10).until(
+                    ec.presence_of_element_located((By.CLASS_NAME, 'page'))
+                )
+            except Exception as e:
+                _log.debug('Reader not found')
+                _log.debug(f'{e}')
+                _log.debug(f'{browser.page_source}')
+                return
+
             return {
                 'title': browser.find_element(
                     By.CLASS_NAME, 'reader-title').get_attribute('innerHTML'),
@@ -39,10 +46,6 @@ def read_by_firefox(url, reader=True):
             'content': browser.find_element(
                 By.TAG_NAME, 'body').get_attribute('innerHTML').strip(),
         }
-    except Exception as e:
-        _log.debug('Reader not found')
-        _log.debug(f'{e}')
-        _log.debug(f'{browser.page_source}')
     finally:
         browser.quit()
         display.stop()
