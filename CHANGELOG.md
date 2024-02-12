@@ -2,6 +2,13 @@
 
 
 
+## v0.4.2 (2024-02-12)
+
+### Fix
+
+* fix: change wait time ([`7070c82`](https://github.com/xAlexo/FirefoxReaderWebService/commit/7070c820a40e9fb3f394643cf8ad702458cb7fc2))
+
+
 ## v0.4.1 (2024-02-12)
 
 ### Fix
