@@ -25,7 +25,7 @@ def read_by_firefox(url, reader=True):
     try:
         if reader:
             try:
-                WebDriverWait(browser, 30).until(
+                WebDriverWait(browser, 20).until(
                     ec.presence_of_element_located((By.CLASS_NAME, 'reader-title'))
                 )
             except Exception as e:
