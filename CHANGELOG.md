@@ -2,6 +2,13 @@
 
 
 
+## v0.4.4 (2024-02-12)
+
+### Fix
+
+* fix: if render ([`ccf79a3`](https://github.com/xAlexo/FirefoxReaderWebService/commit/ccf79a324132fe42cce4de5b2ae64c3a0dc379ca))
+
+
 ## v0.4.3 (2024-02-12)
 
 ### Fix
