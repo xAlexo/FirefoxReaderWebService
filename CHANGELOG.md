@@ -2,6 +2,13 @@
 
 
 
+## v0.4.3 (2024-02-12)
+
+### Fix
+
+* fix: find reader page content ([`be95cf8`](https://github.com/xAlexo/FirefoxReaderWebService/commit/be95cf8b80c21f9f74938950b107810d9f5e672b))
+
+
 ## v0.4.2 (2024-02-12)
 
 ### Fix
