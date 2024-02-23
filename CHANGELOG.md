@@ -2,6 +2,13 @@
 
 
 
+## v0.5.0 (2024-02-23)
+
+### Feature
+
+* feat: add pyroscope ([`d5ef397`](https://github.com/xAlexo/FirefoxReaderWebService/commit/d5ef397877e0edfd79f9e8103ab2747b9d398d4c))
+
+
 ## v0.4.5 (2024-02-12)
 
 ### Fix
