@@ -1,13 +1,18 @@
 import asyncio
 from json import dumps
 
-from async_timeout import timeout
+import pyroscope
 from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from loguru import logger as _log
 
 from reader_web_service.read_by_firefox import read_by_firefox
+
+pyroscope.configure(
+  application_name = "FirefoxReaderWebService",
+  server_address   = "http://my-pyroscope-server:4040",
+)
 
 app = FastAPI()
 

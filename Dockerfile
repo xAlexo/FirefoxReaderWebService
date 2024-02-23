@@ -23,10 +23,11 @@ RUN FIREFOX_SETUP=firefox-setup.tar.bz2 && \
     ln -s /opt/firefox/firefox /usr/bin/firefox && \
     rm $FIREFOX_SETUP
 
-RUN pip3 install selenium pyvirtualdisplay Selenium-Screenshot fastapi uvicorn telegraph[aio] html-telegraph-poster loguru async-timeout
-
 COPY . /app
-
 WORKDIR /app
+
+RUN pip3 install poetry
+RUN poetry config virtualenvs.create false
+RUN poetry install --only main
 
 CMD ["uvicorn", "reader_web_service:app", "--host", "0.0.0.0", "--port", "8095"]
