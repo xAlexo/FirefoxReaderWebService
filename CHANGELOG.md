@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.6.1 (2024-07-05)
+
+### Fix
+
+* fix: use email_from from secrets ([`4760887`](https://github.com/xAlexo/FirefoxReaderWebService/commit/4760887d635e403ff17894014cf4431de9c7293f))
+
 ## v0.6.0 (2024-07-05)
 
 ### Feature
