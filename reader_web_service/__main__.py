@@ -1,13 +1,33 @@
 import asyncio
+import logging
+import os
 from json import dumps
+from pathlib import Path
 
 import pyroscope
 from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from loguru import logger as _log
+from notifiers.logging import NotificationHandler
 
 from reader_web_service.read_by_firefox import read_by_firefox
+
+NOTIFY_OPTIONS = {
+    'from': os.environ["EMAIL_FROM"],
+    'to': os.environ["EMAIL_FROM"],
+    'username': Path('/run/secrets/EMAIL_USERNAME').read_text().strip(),
+    'password': Path('/run/secrets/EMAIL_PASSWORD').read_text().strip(),
+    'subject': 'FirefoxReaderWebService error',
+    'host': 'smtp.office365.com',
+    'port': 587,
+    'ssl': False,
+    'tls': True,
+}
+
+email_handler = NotificationHandler('email', defaults=NOTIFY_OPTIONS)
+logging.basicConfig(handlers=[email_handler])
+_log.add(email_handler, level='ERROR')
 
 pyroscope.configure(
   application_name = "FirefoxReaderWebService",
