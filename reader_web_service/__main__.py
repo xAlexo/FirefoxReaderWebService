@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import os
 from json import dumps
 from pathlib import Path
 
@@ -14,8 +13,8 @@ from notifiers.logging import NotificationHandler
 from reader_web_service.read_by_firefox import read_by_firefox
 
 NOTIFY_OPTIONS = {
-    'from': os.environ["EMAIL_FROM"],
-    'to': os.environ["EMAIL_FROM"],
+    'from': Path('/run/secrets/EMAIL_USERNAME').read_text().strip(),
+    'to': Path('/run/secrets/EMAIL_USERNAME').read_text().strip(),
     'username': Path('/run/secrets/EMAIL_USERNAME').read_text().strip(),
     'password': Path('/run/secrets/EMAIL_PASSWORD').read_text().strip(),
     'subject': 'FirefoxReaderWebService error',
