@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.7.5 (2025-01-01)
+
+### Bug Fixes
+
+- Больше логов
+  ([`50c3628`](https://github.com/xAlexo/FirefoxReaderWebService/commit/50c3628a7c1180789b26d894b096d581ba6c2b56))
+
+
 ## v0.7.4 (2025-01-01)
 
 ### Bug Fixes
