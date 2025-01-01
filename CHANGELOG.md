@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.7.2 (2025-01-01)
+
+### Bug Fixes
+
+- Попробовал убрать display
+  ([`ef23e9d`](https://github.com/xAlexo/FirefoxReaderWebService/commit/ef23e9d582ec9cdcbd0d4fd9d7f2a15aeeb48837))
+
+
 ## v0.7.1 (2025-01-01)
 
 ### Bug Fixes
