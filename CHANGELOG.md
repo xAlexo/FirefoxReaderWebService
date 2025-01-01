@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.7.1 (2025-01-01)
+
+### Bug Fixes
+
+- Добавлен забытый пакет
+  ([`8f8a1a7`](https://github.com/xAlexo/FirefoxReaderWebService/commit/8f8a1a787698ebcfd31e6874c847e195d117acb9))
+
+
 ## v0.7.0 (2025-01-01)
 
 ### Features
