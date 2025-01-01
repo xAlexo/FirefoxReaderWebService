@@ -1,3 +1,5 @@
+from socket import socket
+
 import sentry_sdk
 from loguru import logger as _log
 from selenium import webdriver
@@ -23,6 +25,8 @@ def read_by_firefox(url, reader=True):
             url = READER_URL.format(url)
 
         _log.debug(f'Opening: {url}')
+        ip = socket.gethostbyname('google.com')
+        _log.debug(f'IP: {ip}')
         browser.get(url)
         _log.debug('Opened')
 
@@ -54,7 +58,6 @@ def read_by_firefox(url, reader=True):
         }
     except Exception as e:
         sentry_sdk.capture_exception(e)
-        return
     finally:
         browser.quit()
 
