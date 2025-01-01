@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.7.6 (2025-01-01)
+
+### Bug Fixes
+
+- Открытие по ip
+  ([`67e0ca9`](https://github.com/xAlexo/FirefoxReaderWebService/commit/67e0ca9f65fe4d70ad9496cd1f0dd745da798dd1))
+
+
 ## v0.7.5 (2025-01-01)
 
 ### Bug Fixes
