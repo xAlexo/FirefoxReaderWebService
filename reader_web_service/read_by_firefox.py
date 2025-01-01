@@ -1,4 +1,4 @@
-from socket import socket
+import socket
 
 import sentry_sdk
 from loguru import logger as _log
@@ -25,7 +25,7 @@ def read_by_firefox(url, reader=True):
             url = READER_URL.format(url)
 
         _log.debug(f'Opening: {url}')
-        ip = socket.gethostbyname('google.com')
+        ip = socket.gethostbyname('ifconfig.me')
         _log.debug(f'IP: {ip}')
         browser.get(url)
         _log.debug('Opened')
