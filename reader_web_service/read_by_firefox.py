@@ -1,3 +1,4 @@
+import sentry_sdk
 from loguru import logger as _log
 from pyvirtualdisplay import Display
 from selenium import webdriver
@@ -54,7 +55,7 @@ def read_by_firefox(url, reader=True):
                 By.TAG_NAME, 'body').get_attribute('innerHTML').strip(),
         }
     except Exception as e:
-        _log.error(f'Error: {e}')
+        sentry_sdk.capture_exception(e)
         return
     finally:
         browser.quit()

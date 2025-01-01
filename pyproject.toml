@@ -16,6 +16,7 @@ fastapi = "^0.111.0"
 uvicorn = "^0.30.1"
 pyroscope-io = "^0.8.7"
 notifiers = "^1.3.3"
+sentry-sdk = "^2.19.2"
 
 [build-system]
 requires = ["poetry-core"]
