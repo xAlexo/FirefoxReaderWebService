@@ -1,6 +1,5 @@
 import sentry_sdk
 from loguru import logger as _log
-from pyvirtualdisplay import Display
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
@@ -17,16 +16,15 @@ firefox_options.set_preference("permissions.default.image", 2)
 def read_by_firefox(url, reader=True):
     _log.debug(f'read_by_firefox: {url}')
 
-    display = Display(size=(800, 600))
-    display.start()
-
     browser = webdriver.Firefox(options=firefox_options)
+
     try:
         if reader:
             url = READER_URL.format(url)
 
         _log.debug(f'Opening: {url}')
         browser.get(url)
+        _log.debug('Opened')
 
         if reader:
             try:
@@ -59,9 +57,9 @@ def read_by_firefox(url, reader=True):
         return
     finally:
         browser.quit()
-        display.stop()
 
 
 if __name__ == '__main__':
-    print(read_by_firefox('https://www.mirf.ru/serial/harli-kvinn-3-j-sezon-kak-lego-betmen-no-bez-lego/'))
-    print(read_by_firefox('https://300.ya.ru/3fOcYRBL', False))
+    print(read_by_firefox('http://ifconfig.me/', False))
+    # print(read_by_firefox('https://www.mirf.ru/serial/harli-kvinn-3-j-sezon-kak-lego-betmen-no-bez-lego/'))
+    # print(read_by_firefox('https://300.ya.ru/3fOcYRBL', False))
