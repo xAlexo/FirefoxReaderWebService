@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.7.4 (2025-01-01)
+
+### Bug Fixes
+
+- Проверка DNS
+  ([`a5402ad`](https://github.com/xAlexo/FirefoxReaderWebService/commit/a5402ad732e5d744ed4d19066f64eb02b56be1e9))
+
+
 ## v0.7.3 (2025-01-01)
 
 ### Bug Fixes
