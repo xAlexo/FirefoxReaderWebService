@@ -1,32 +1,17 @@
 import asyncio
-import logging
+import os
 from json import dumps
-from pathlib import Path
 
 import pyroscope
+import sentry_sdk
 from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from loguru import logger as _log
-from notifiers.logging import NotificationHandler
 
 from reader_web_service.read_by_firefox import read_by_firefox
 
-NOTIFY_OPTIONS = {
-    'from': Path('/run/secrets/EMAIL_USERNAME').read_text().strip(),
-    'to': Path('/run/secrets/EMAIL_USERNAME').read_text().strip(),
-    'username': Path('/run/secrets/EMAIL_USERNAME').read_text().strip(),
-    'password': Path('/run/secrets/EMAIL_PASSWORD').read_text().strip(),
-    'subject': 'FirefoxReaderWebService error',
-    'host': 'smtp.office365.com',
-    'port': 587,
-    'ssl': False,
-    'tls': True,
-}
-
-email_handler = NotificationHandler('email', defaults=NOTIFY_OPTIONS)
-logging.basicConfig(handlers=[email_handler])
-_log.add(email_handler, level='ERROR')
+sentry_sdk.init(os.environ["SENTRY_DSN"])
 
 pyroscope.configure(
   application_name = "FirefoxReaderWebService",
@@ -55,7 +40,7 @@ async def root(url, ):
 
 
 @app.get("/html")
-async def root(url, ):
+async def html(url, ):
     loop = asyncio.get_running_loop()
     data = await loop.run_in_executor(None, read_by_firefox, url, False)
     if not data:
