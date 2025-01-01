@@ -28,7 +28,7 @@ def read_by_firefox(url, reader=True):
         ip = socket.gethostbyname('ifconfig.me')
         _log.debug(f'IP: {ip}')
         _log.debug('Opening by IP')
-        browser.get(ip)
+        browser.get(f'http://{ip}/')
         _log.debug('Opening by URL')
         browser.get(url)
         _log.debug('Opened')
