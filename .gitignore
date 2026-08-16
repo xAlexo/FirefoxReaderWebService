@@ -1,2 +1,5 @@
 .idea
 .venv
+.omo
+__pycache__/
+*.pyc
