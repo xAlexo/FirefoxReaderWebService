@@ -8,8 +8,8 @@ ENV UV_COMPILE_BYTECODE=1
 ENV UV_PYTHON_DOWNLOADS=never
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 python3-pip python3-dev python3-setuptools \
-    fonts-liberation libappindicator3-1 libasound2 libatk-bridge2.0-0 \
+    fonts-liberation libayatana-appindicator3-1 libasound2t64 \
+    libatk-bridge2.0-0t64 libatk1.0-0t64 libgtk-3-0t64 \
     libnspr4 libnss3 lsb-release xdg-utils libxss1 libdbus-glib-1-2 \
     curl unzip wget xvfb jq \
     && apt-get clean \
@@ -21,10 +21,10 @@ RUN GECKODRIVER_VERSION=$(curl -s https://api.github.com/repos/mozilla/geckodriv
     chmod +x /usr/local/bin/geckodriver && \
     rm geckodriver-$GECKODRIVER_VERSION-linux64.tar.gz
 
-RUN FIREFOX_SETUP=firefox-setup.tar.bz2 && \
+RUN FIREFOX_SETUP=firefox-setup.tar.xz && \
     apt-get purge firefox && \
     wget -O $FIREFOX_SETUP "https://download.mozilla.org/?product=firefox-latest&os=linux64" && \
-    tar xjf $FIREFOX_SETUP -C /opt/ && \
+    tar xJf $FIREFOX_SETUP -C /opt/ && \
     ln -s /opt/firefox/firefox /usr/bin/firefox && \
     rm $FIREFOX_SETUP
 
