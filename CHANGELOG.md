@@ -1,6 +1,37 @@
 # CHANGELOG
 
 
+## v0.8.2 (2026-08-16)
+
+### Bug Fixes
+
+- Make pyroscope optional (Linux-only) and add dev dependencies
+  ([`5579f1a`](https://github.com/xAlexo/FirefoxReaderWebService/commit/5579f1a50b6877a55554b788557ba1723687c372))
+
+- pyroscope-io: add sys_platform=='linux' marker (no Windows wheels) - __main__.py: guard pyroscope
+  import with try/except ImportError - add pytest + httpx to [dependency-groups] dev - enables local
+  development and testing on Windows/macOS
+
+- Reader mode via injected Readability.js instead of about:reader
+  ([`a60ee6f`](https://github.com/xAlexo/FirefoxReaderWebService/commit/a60ee6fb521f07fea7f9a3971b9d60422c0b3364))
+
+Firefox 153+ blocks WebDriver navigation to about:reader URLs (UnsupportedOperationError from
+  Marionette driver.sys.mjs). Replace direct about:reader?url= navigation with: 1. Navigate to URL
+  normally (browser.get) 2. Inject @mozilla/readability.js from CDN 3. Parse DOM with Readability
+  (same lib Firefox uses internally)
+
+Same result: {title, content} with <div class='page'> HTML. JS-rendered pages still work — Firefox
+  executes JS in step 1.
+
+### Testing
+
+- Add unit tests for all FastAPI endpoints
+  ([`17c5207`](https://github.com/xAlexo/FirefoxReaderWebService/commit/17c52075e30cb4567b601de9c9cbfbeeb72d6980))
+
+6 tests covering /, /html, /ping — success and failure paths. Mocks read_by_firefox so no
+  Firefox/Selenium needed to run tests. All 6 pass: uv run pytest tests/ -v
+
+
 ## v0.8.1 (2026-08-16)
 
 ### Bug Fixes
