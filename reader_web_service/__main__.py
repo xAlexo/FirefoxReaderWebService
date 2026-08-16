@@ -21,6 +21,15 @@ pyroscope.configure(
 app = FastAPI()
 
 
+@app.get("/ping")
+async def ping():
+    loop = asyncio.get_running_loop()
+    data = await loop.run_in_executor(None, read_by_firefox, 'https://example.com', False)
+    if not data:
+        return JSONResponse(content=jsonable_encoder({"status": "error"}), status_code=500)
+    return {"status": "ok"}
+
+
 @app.get("/")
 async def root(url, ):
     loop = asyncio.get_running_loop()
