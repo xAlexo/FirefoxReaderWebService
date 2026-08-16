@@ -2,7 +2,6 @@ import asyncio
 import os
 from json import dumps
 
-import pyroscope
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
@@ -13,10 +12,14 @@ from reader_web_service.read_by_firefox import read_by_firefox
 
 sentry_sdk.init(os.environ["SENTRY_DSN"])
 
-pyroscope.configure(
-  application_name = "FirefoxReaderWebService",
-  server_address   = "http://my-pyroscope-server:4040",
-)
+try:
+    import pyroscope
+    pyroscope.configure(
+      application_name = "FirefoxReaderWebService",
+      server_address   = "http://my-pyroscope-server:4040",
+    )
+except ImportError:
+    pass
 
 app = FastAPI()
 
