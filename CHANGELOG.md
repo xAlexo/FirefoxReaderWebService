@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.8.4 (2026-08-16)
+
+### Bug Fixes
+
+- Trigger release after package deletion
+  ([`f3e2cc0`](https://github.com/xAlexo/FirefoxReaderWebService/commit/f3e2cc0d600bca78106f97669c1698a650cb03ba))
+
+
 ## v0.8.3 (2026-08-16)
 
 ### Bug Fixes
