@@ -1,8 +1,11 @@
 FROM python:3.11
 
-ENV LANG C.UTF-8
-ENV LC_ALL C.UTF-8
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 ENV PYTHONUNBUFFERED=1
+ENV UV_LINK_MODE=copy
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_PYTHON_DOWNLOADS=never
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 python3-pip python3-dev python3-setuptools \
@@ -25,11 +28,15 @@ RUN FIREFOX_SETUP=firefox-setup.tar.bz2 && \
     ln -s /opt/firefox/firefox /usr/bin/firefox && \
     rm $FIREFOX_SETUP
 
-COPY . /app
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+
 WORKDIR /app
 
-RUN pip3 install poetry
-RUN poetry config virtualenvs.create false
-RUN poetry install --only main
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
 
-CMD ["uvicorn", "reader_web_service:app", "--host", "0.0.0.0", "--port", "8095"]
+COPY reader_web_service ./reader_web_service
+COPY README.md ./
+RUN uv sync --frozen --no-dev
+
+CMD ["uv", "run", "uvicorn", "reader_web_service:app", "--host", "0.0.0.0", "--port", "8095"]

@@ -1,1 +1,5 @@
 .venv
+.git
+.github
+.idea
+.omo
