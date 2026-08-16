@@ -1,6 +1,31 @@
 # CHANGELOG
 
 
+## v0.8.1 (2026-08-16)
+
+### Bug Fixes
+
+- Upgrade fastapi 0.111->0.141.1 to fix 7 starlette CVEs
+  ([`a8ebd37`](https://github.com/xAlexo/FirefoxReaderWebService/commit/a8ebd37a4c6979fc6b1c7b263d2f21dc189e6255))
+
+Dependabot alerts (all in starlette <1.3.1): - high: DoS via form() limits ignored (CVE in starlette
+  >=0.4.1,<1.3.1) - high: SSRF/NTLM credential theft via UNC paths on Windows (<1.1.0) - high: DoS
+  via multipart/form-data (<0.40.0) - medium: Host header poisoning -> request.url.path bypass
+  (<=1.0.0) - medium: Arbitrary HTTP method dispatch via getattr (<1.1.0) - medium: DoS parsing
+  large multipart files (<0.47.2) - low: Unvalidated request path -> hostname poisoning (<1.3.0)
+
+starlette 0.37.2 -> 1.6.0, fastapi 0.111.1 -> 0.141.1
+
+### Refactoring
+
+- Merge ci.yml into release.yml as single workflow
+  ([`cffa34e`](https://github.com/xAlexo/FirefoxReaderWebService/commit/cffa34e7ee245b40ce35bb28c3cf0d1414f87eb8))
+
+- Semantic Release runs first, creates tag + release - Docker build+push runs only if release
+  happened (released==true) - Docker uses GITHUB_TOKEN for ghcr.io (GH_TOKEN expired) - ci.yml
+  deleted, no separate tag-triggered workflow needed
+
+
 ## v0.8.0 (2026-08-16)
 
 ### Bug Fixes
