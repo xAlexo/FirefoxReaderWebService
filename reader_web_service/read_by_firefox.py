@@ -1,3 +1,4 @@
+import json
 import socket
 
 import sentry_sdk
@@ -5,10 +6,23 @@ from loguru import logger as _log
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.wait import WebDriverWait
 
-READER_URL = 'about:reader?url={}'
+READABILITY_URL = 'https://cdn.jsdelivr.net/npm/@mozilla/readability@0.5.0/Readability.js'
+
+_READABILITY_PARSE = """
+try {
+    var doc = document.cloneNode(true);
+    var reader = new Readability(doc);
+    var article = reader.parse();
+    if (article) {
+        return JSON.stringify({title: article.title, content: article.content});
+    }
+    return null;
+} catch(e) {
+    return null;
+}
+"""
 
 firefox_options = Options()
 firefox_options.add_argument("--headless")
@@ -21,9 +35,6 @@ def read_by_firefox(url, reader=True):
     browser = webdriver.Firefox(options=firefox_options)
 
     try:
-        if reader:
-            url = READER_URL.format(url)
-
         _log.debug(f'Opening: {url}')
         ip = socket.gethostbyname('ifconfig.me')
         _log.debug(f'IP: {ip}')
@@ -35,23 +46,30 @@ def read_by_firefox(url, reader=True):
 
         if reader:
             try:
-                WebDriverWait(browser, 5).until(
-                    ec.presence_of_element_located((By.CLASS_NAME, 'page'))
+                browser.execute_script(
+                    'var s = document.createElement("script"); s.src = arguments[0]; document.head.appendChild(s);',
+                    READABILITY_URL,
                 )
+                WebDriverWait(browser, 5).until(
+                    lambda d: d.execute_script('return typeof Readability !== "undefined"')
+                )
+                _log.debug('Readability.js loaded')
             except Exception as e:
-                _log.debug('Reader not found')
+                _log.debug('Readability.js failed to load')
                 _log.debug(f'{e}')
-                _log.debug(f'{browser.page_source}')
                 return
 
-            _log.debug('Reader found')
-
-            return {
-                'title': browser.find_element(
-                    By.CLASS_NAME, 'reader-title').get_attribute('innerHTML'),
-                'content': browser.find_element(
-                    By.CLASS_NAME, 'page').get_attribute('innerHTML').strip(),
-            }
+            try:
+                result = browser.execute_script(_READABILITY_PARSE)
+                if not result:
+                    _log.debug('Reader not found')
+                    return
+                _log.debug('Reader found')
+                return json.loads(result)
+            except Exception as e:
+                _log.debug('Reader parse failed')
+                _log.debug(f'{e}')
+                return
 
         return {
             'title': browser.find_element(
@@ -67,5 +85,3 @@ def read_by_firefox(url, reader=True):
 
 if __name__ == '__main__':
     print(read_by_firefox('http://ifconfig.me/', False))
-    # print(read_by_firefox('https://www.mirf.ru/serial/harli-kvinn-3-j-sezon-kak-lego-betmen-no-bez-lego/'))
-    # print(read_by_firefox('https://300.ya.ru/3fOcYRBL', False))
