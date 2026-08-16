@@ -1,6 +1,65 @@
 # CHANGELOG
 
 
+## v0.8.0 (2026-08-16)
+
+### Bug Fixes
+
+- Add trailing newline to Dockerfile
+  ([`6b83d5f`](https://github.com/xAlexo/FirefoxReaderWebService/commit/6b83d5fd81d67a708eb572e757ffe7b6208c6929))
+
+- Update Firefox deps for Debian Trixie and tar.xz download
+  ([`7b313fd`](https://github.com/xAlexo/FirefoxReaderWebService/commit/7b313fdcc2cd52de464fd226d7701fbba3e516bb))
+
+- apt: libasound2->libasound2t64, libatk-bridge2.0-0->libatk-bridge2.0-0t64 - apt:
+  libappindicator3-1->libayatana-appindicator3-1 - apt: add libatk1.0-0t64, libgtk-3-0t64 (modern
+  Firefox deps) - apt: drop redundant python3/python3-pip/python3-dev/python3-setuptools - Firefox
+  download: tar.bz2->tar.xz (Mozilla switched format)
+
+- Update release workflow for Node 24 compatibility
+  ([`d88ad31`](https://github.com/xAlexo/FirefoxReaderWebService/commit/d88ad3132da847bb7dbbb20e509fe10ed2d0629b))
+
+- actions/checkout@v3 -> @v4 (v3 deprecated, breaks auth on Node 24) -
+  python-semantic-release@master -> @v9 (stable tag) - use GH_TOKEN consistently (was mixing
+  GH_TOKEN and GITHUB_TOKEN)
+
+- Use default GITHUB_TOKEN instead of expired GH_TOKEN secret
+  ([`fdd3e79`](https://github.com/xAlexo/FirefoxReaderWebService/commit/fdd3e792c158620dde95a6c73aad7f74f8e35925))
+
+### Chores
+
+- Add pre-commit hooks and ruff linter
+  ([`f46eb61`](https://github.com/xAlexo/FirefoxReaderWebService/commit/f46eb611d684f0b3fed1d853168e2102bef95434))
+
+- .pre-commit-config.yaml: trailing-whitespace, end-of-file-fixer, check-merge-conflict, check-yaml,
+  check-toml, check-added-large-files, debug-statements, check-docstring-first, ruff (--fix, no
+  formatter), codespell - pyproject.toml: [tool.ruff] line-length=120, target py311, select
+  E/F/I/W/UP, ignore BLE001 (sentry blind-except pattern)
+
+- Migrate from Poetry to uv
+  ([`a2b1aa3`](https://github.com/xAlexo/FirefoxReaderWebService/commit/a2b1aa367abf3b9d23bf41f10d3b3229f497a712))
+
+- pyproject.toml: [tool.poetry] -> PEP 621 [project], hatchling backend - poetry.lock removed,
+  uv.lock generated (66 packages) - Dockerfile: uv from ghcr.io/astral-sh/uv, two-stage sync
+  --frozen --no-dev - .dockerignore: exclude .git/.github/.idea/.omo - copilot-instructions.md: uv
+  sync --no-dev / uv run uvicorn
+
+- Migrate to Python 3.13
+  ([`b24ff76`](https://github.com/xAlexo/FirefoxReaderWebService/commit/b24ff7612dfb6aeddb79346dc2a2d1a0b5132346))
+
+- pyproject.toml: requires-python >=3.13,<4.0, ruff target py313 - Dockerfile: FROM python:3.13 -
+  uv.lock: regenerated (66 packages, old 3.11/3.12 markers removed)
+
+### Features
+
+- Add /ping health check endpoint
+  ([`075eda4`](https://github.com/xAlexo/FirefoxReaderWebService/commit/075eda4d2ccde22633c57b9b0c7eed3e776a34f0))
+
+Opens https://example.com via headless Firefox to verify the full
+  Selenium+geckodriver+Firefox+network stack. Returns 200 {status:ok} on success, 500 {status:error}
+  on failure.
+
+
 ## v0.7.6 (2025-01-01)
 
 ### Bug Fixes
