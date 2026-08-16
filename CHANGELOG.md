@@ -1,6 +1,23 @@
 # CHANGELOG
 
 
+## v0.8.3 (2026-08-16)
+
+### Bug Fixes
+
+- Use explicit lowercase image name for ghcr.io push
+  ([`e34e374`](https://github.com/xAlexo/FirefoxReaderWebService/commit/e34e374e86cda9b61f5e6cc01f332c82360e7f7c))
+
+github.repository (xAlexo/FirefoxReaderWebService) resolves to mixed-case which ghcr.io normalizes,
+  but the existing package was created by a PAT and is not linked to this repo. Explicit lowercase
+  matches the existing package name exactly.
+
+### Chores
+
+- Add __pycache__, *.pyc, .omo to .gitignore
+  ([`c9a98c4`](https://github.com/xAlexo/FirefoxReaderWebService/commit/c9a98c481bd8d7cc445cbea9620034d786185246))
+
+
 ## v0.8.2 (2026-08-16)
 
 ### Bug Fixes
