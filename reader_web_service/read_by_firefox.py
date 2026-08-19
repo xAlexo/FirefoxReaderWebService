@@ -4,9 +4,14 @@ import socket
 import sentry_sdk
 from loguru import logger as _log
 from selenium import webdriver
+from selenium.common.exceptions import NoSuchWindowException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.wait import WebDriverWait
+
+# Operational Selenium failures (page-load timeout, discarded browsing context)
+# are expected in production — they must NOT be captured to Sentry as bugs.
+_OPERATIONAL_EXCEPTIONS = (TimeoutException, NoSuchWindowException)
 
 READABILITY_URL = 'https://cdn.jsdelivr.net/npm/@mozilla/readability@0.5.0/Readability.js'
 
@@ -33,6 +38,10 @@ def read_by_firefox(url, reader=True):
     _log.debug(f'read_by_firefox: {url}')
 
     browser = webdriver.Firefox(options=firefox_options)
+    # ponytail: 30s ceiling — default Selenium page-load timeout is 300s (geckodriver
+    # transport raises ReadTimeoutError at 120s). Keeping it explicit prevents the
+    # 120s hang observed in Bugsink FIREFOX_READER_WEB_SERVICE-1.
+    browser.set_page_load_timeout(30)
 
     try:
         _log.debug(f'Opening: {url}')
@@ -77,6 +86,10 @@ def read_by_firefox(url, reader=True):
             'content': browser.find_element(
                 By.TAG_NAME, 'body').get_attribute('innerHTML').strip(),
         }
+    except _OPERATIONAL_EXCEPTIONS as e:
+        # Operational failures (timeout, discarded context) — log and return None.
+        # These are expected in production and must not be captured to Sentry.
+        _log.debug(f'operational selenium failure: {e}')
     except Exception as e:
         sentry_sdk.capture_exception(e)
     finally:
