@@ -1,6 +1,25 @@
 # CHANGELOG
 
 
+## v0.8.5 (2026-08-19)
+
+### Bug Fixes
+
+- Handle Selenium operational failures without Sentry noise
+  ([`6f0c4fa`](https://github.com/xAlexo/FirefoxReaderWebService/commit/6f0c4fa8ee0001c6f237b465b3b70760466e5441))
+
+Both Bugsink issues FIREFOX_READER_WEB_SERVICE-1 (ReadTimeoutError from browser.get hanging 120s)
+  and -2 (NoSuchWindowException from discarded browsing context) shared one root cause:
+  read_by_firefox treated every Selenium failure as a bug via a broad 'except Exception' that
+  captured to Sentry, and never set an explicit page-load timeout.
+
+- set_page_load_timeout(30) so slow pages fail fast instead of hanging for the geckodriver
+  transport's 120s read timeout - catch TimeoutException + NoSuchWindowException explicitly:
+  log+return None without Sentry capture (operational, not a bug) - keep the broad except for
+  genuinely unexpected errors (Sentry capture) - pin the new behavior with 3 tests (RED->GREEN),
+  regression guard for the unexpected-error path
+
+
 ## v0.8.4 (2026-08-16)
 
 ### Bug Fixes
