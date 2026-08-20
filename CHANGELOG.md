@@ -1,6 +1,66 @@
 # CHANGELOG
 
 
+## v0.10.0 (2026-08-20)
+
+### Features
+
+- Add compose.yaml with Tor proxy environment
+  ([`5426161`](https://github.com/xAlexo/FirefoxReaderWebService/commit/542616100b453e1a5f63928e799825defc322c51))
+
+Service with TOR_PROXY (default socks5h://127.0.0.1:9050), PROXIES for Tor bootstrap,
+  REQUIRE_PROXY=1 by default, USE_BRIDGES, TOR_BRIDGE_1..10, BOOTSTRAP_TIMEOUT_SECONDS. Port 8095,
+  1G RAM limit, logging rotation.
+
+Ultraworked with [Sisyphus](https://github.com/code-yeongyu/oh-my-openagent)
+
+Co-authored-by: Sisyphus <clio-agent@sisyphuslabs.ai>
+
+- Add host-aware proxy router with config and tests
+  ([`1417ad6`](https://github.com/xAlexo/FirefoxReaderWebService/commit/1417ad656808f306eda7e5efae07812c354e3ab6))
+
+Ported from TGRSSReaderBot's contrib.proxy_router. Lazy config import allows test-time env
+  overrides. REQUIRE_PROXY=1 by default — Firefox always routes through Tor, no direct connections.
+
+Ultraworked with [Sisyphus](https://github.com/code-yeongyu/oh-my-openagent)
+
+Co-authored-by: Sisyphus <clio-agent@sisyphuslabs.ai>
+
+- Add Tor bootstrap entrypoint and torrc
+  ([`02bcafd`](https://github.com/xAlexo/FirefoxReaderWebService/commit/02bcafdcbb148f2692a05575b5243d859dd3fb60))
+
+Entrypoint starts Tor in background, blocks until Bootstrapped 100% + nc -z 9050, then launches the
+  app. Supports obfs4 bridges via TOR_BRIDGE_1..10 (case-by-index, no eval) and Socks5Proxy from
+  first PROXIES entry with self-loop guard. set +e around wait prevents Tor orphan on non-zero app
+  exit.
+
+Ultraworked with [Sisyphus](https://github.com/code-yeongyu/oh-my-openagent)
+
+Co-authored-by: Sisyphus <clio-agent@sisyphuslabs.ai>
+
+- Multi-stage Dockerfile with Tor, obfs4proxy, tini
+  ([`ed7e4e8`](https://github.com/xAlexo/FirefoxReaderWebService/commit/ed7e4e82eb6edc792eecaa1b4c4e425d6cf00ce4))
+
+Builder stage uses uv sync; runtime stage is python:3.13-slim with
+  Firefox+geckodriver+tor+obfs4proxy+tini+netcat-openbsd. ENTRYPOINT is tini+entrypoint.sh, CMD runs
+  uvicorn directly from venv (on PATH). .dockerignore excludes tests and caches.
+
+Ultraworked with [Sisyphus](https://github.com/code-yeongyu/oh-my-openagent)
+
+Co-authored-by: Sisyphus <clio-agent@sisyphuslabs.ai>
+
+- Route Firefox through Tor SOCKS5 proxy
+  ([`c8512ec`](https://github.com/xAlexo/FirefoxReaderWebService/commit/c8512ecbc941fad690474d7cb7788113a719a75e))
+
+Replace module-level firefox_options with _build_options() that configures Firefox SOCKS5 proxy
+  prefs from TOR_PROXY (network.proxy.socks + socks_remote_dns=true for socks5h equivalent). Firefox
+  always routes through local Tor (127.0.0.1:9050 by default).
+
+Ultraworked with [Sisyphus](https://github.com/code-yeongyu/oh-my-openagent)
+
+Co-authored-by: Sisyphus <clio-agent@sisyphuslabs.ai>
+
+
 ## v0.9.0 (2026-08-20)
 
 ### Features
