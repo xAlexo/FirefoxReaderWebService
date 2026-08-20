@@ -1,6 +1,24 @@
 # CHANGELOG
 
 
+## v0.9.0 (2026-08-20)
+
+### Features
+
+- Retry operational Selenium failures with fresh browser
+  ([`84bdf13`](https://github.com/xAlexo/FirefoxReaderWebService/commit/84bdf13ffc6416bf30f9e10b67ba6673f4432927))
+
+TimeoutException and NoSuchWindowException are transient — a fresh Firefox instance often succeeds.
+  read_by_firefox now retries up to MAX_ATTEMPTS=3 times on operational failures, spinning up a new
+  browser each attempt. Unexpected exceptions still hit Sentry once and return immediately (no
+  retry).
+
+- added MAX_ATTEMPTS constant - wrapped browser lifecycle in for attempt loop - operational except:
+  log and continue to next attempt - unexpected except: sentry + return None (no retry) - 2 new
+  tests: S4 timeout-then-success, S5 no-such-window-then-success - updated S1/S2: assert retries
+  exhausted (quit called per attempt)
+
+
 ## v0.8.5 (2026-08-19)
 
 ### Bug Fixes
