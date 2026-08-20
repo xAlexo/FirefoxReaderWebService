@@ -27,7 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-liberation libayatana-appindicator3-1 libasound2t64 \
     libatk-bridge2.0-0t64 libatk1.0-0t64 libgtk-3-0t64 \
     libnspr4 libnss3 lsb-release xdg-utils libxss1 libdbus-glib-1-2 \
-    curl unzip wget xvfb jq \
+    curl unzip wget xvfb jq xz-utils \
     tor obfs4proxy tini netcat-openbsd \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
