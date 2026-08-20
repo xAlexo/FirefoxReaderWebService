@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 from json import dumps
 
 import sentry_sdk
@@ -55,12 +56,14 @@ async def root(url, ):
 async def ip():
     """Return the exit IP address Firefox uses (through Tor/proxy)."""
     loop = asyncio.get_running_loop()
-    data = await loop.run_in_executor(None, read_by_firefox, 'http://ifconfig.me/', False)
+    data = await loop.run_in_executor(None, read_by_firefox, 'https://ip.me', False)
     if not data:
         return JSONResponse(content=jsonable_encoder({"error": "failed to get IP"}), status_code=500)
-    # ifconfig.me returns the IP as the page body text
-    ip = data['content'].strip()
-    return {"ip": ip}
+    # ip.me embeds the IP in <input type="text" name="ip" value="1.2.3.4" ...>
+    m = re.search(r'name="ip"\s+value="(\d+\.\d+\.\d+\.\d+)"', data['content'])
+    if not m:
+        return JSONResponse(content=jsonable_encoder({"error": "could not parse IP"}), status_code=500)
+    return {"ip": m.group(1)}
 
 
 @app.get("/html")

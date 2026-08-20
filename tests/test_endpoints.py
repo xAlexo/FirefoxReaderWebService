@@ -87,12 +87,15 @@ def test_ping_failure(mock_read, client):
 
 @patch("reader_web_service.__main__.read_by_firefox")
 def test_ip_success(mock_read, client):
-    """GET /ip returns the exit IP from ifconfig.me body."""
-    mock_read.return_value = {"title": "", "content": "203.0.113.42"}
+    """GET /ip returns the exit IP parsed from ip.me page."""
+    mock_read.return_value = {
+        "title": "What is my IP address?",
+        "content": '<input type="text" name="ip" value="203.0.113.42" class="form-control" id="ip-lookup">',
+    }
     resp = client.get("/ip")
     assert resp.status_code == 200
     assert resp.json() == {"ip": "203.0.113.42"}
-    mock_read.assert_called_once_with("http://ifconfig.me/", False)
+    mock_read.assert_called_once_with("https://ip.me", False)
 
 
 @patch("reader_web_service.__main__.read_by_firefox")
@@ -102,3 +105,12 @@ def test_ip_failure(mock_read, client):
     resp = client.get("/ip")
     assert resp.status_code == 500
     assert resp.json() == {"error": "failed to get IP"}
+
+
+@patch("reader_web_service.__main__.read_by_firefox")
+def test_ip_parse_failure(mock_read, client):
+    """GET /ip when page loaded but IP not found in HTML → 500 + error."""
+    mock_read.return_value = {"title": "Error", "content": "<html>no IP here</html>"}
+    resp = client.get("/ip")
+    assert resp.status_code == 500
+    assert resp.json() == {"error": "could not parse IP"}
