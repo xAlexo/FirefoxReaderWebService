@@ -1,6 +1,30 @@
 # CHANGELOG
 
 
+## v0.11.0 (2026-08-20)
+
+### Documentation
+
+- Add README with Tor configuration and deployment guide
+  ([`656751d`](https://github.com/xAlexo/FirefoxReaderWebService/commit/656751d10a42ede8874c4af08060ce42e9439e20))
+
+Ultraworked with [Sisyphus](https://github.com/code-yeongyu/oh-my-openagent)
+
+Co-authored-by: Sisyphus <clio-agent@sisyphuslabs.ai>
+
+### Features
+
+- Add .env.example with Tor proxy configuration template
+  ([`3c0e268`](https://github.com/xAlexo/FirefoxReaderWebService/commit/3c0e2685fbef72e77228501d95c116120d001d6c))
+
+Deployment template covering TOR_PROXY, PROXIES, PROXY_WHITELIST_HOSTS, REQUIRE_PROXY, USE_BRIDGES,
+  TOR_BRIDGE_1..10, BOOTSTRAP_TIMEOUT_SECONDS.
+
+Ultraworked with [Sisyphus](https://github.com/code-yeongyu/oh-my-openagent)
+
+Co-authored-by: Sisyphus <clio-agent@sisyphuslabs.ai>
+
+
 ## v0.10.1 (2026-08-20)
 
 ### Bug Fixes
