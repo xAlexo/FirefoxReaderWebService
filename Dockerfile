@@ -12,6 +12,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
 COPY reader_web_service ./reader_web_service
+COPY README.md ./
 RUN uv sync --frozen --no-dev
 
 # Runtime stage: Firefox + geckodriver + Tor
