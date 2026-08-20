@@ -1,6 +1,24 @@
 # CHANGELOG
 
 
+## v0.12.2 (2026-08-20)
+
+### Bug Fixes
+
+- Normalise schemeless URLs and use browser.title for titleless pages
+  ([`809cacc`](https://github.com/xAlexo/FirefoxReaderWebService/commit/809cacc26bf81a9dec9aefe4a7a9bd44ebdb98a5))
+
+Bugsink FIREFOX_READER_WEB_SERVICE-3: browser.get(2ip.ru) raised InvalidArgumentException — now
+  prepend http:// when no scheme present.
+
+Bugsink FIREFOX_READER_WEB_SERVICE-4: find_element(By.TAG_NAME,'title') raised
+  NoSuchElementException on titleless pages — now use browser.title (Selenium native, returns ''
+  instead of raising).
+
+Regression tests: test_schemeless_url_normalised_to_http (S6),
+  test_missing_title_returns_empty_no_sentry (S7). Both RED->GREEN.
+
+
 ## v0.12.1 (2026-08-20)
 
 ### Bug Fixes
