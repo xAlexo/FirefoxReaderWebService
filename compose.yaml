@@ -1,0 +1,41 @@
+services:
+  firefox-reader:
+    image: ghcr.io/xalexo/firefoxreaderwebservice:latest
+    pull_policy: always
+    restart: always
+    command: ["uvicorn", "reader_web_service:app", "--host", "0.0.0.0", "--port", "8095"]
+    env_file: .env
+    environment:
+      # Tor as default for app requests; PROXIES used for Tor bootstrap (Socks5Proxy)
+      - TOR_PROXY=${TOR_PROXY:-socks5h://127.0.0.1:9050}
+      - PROXIES=${PROXIES:-}
+      - PROXY_WHITELIST_HOSTS=${PROXY_WHITELIST_HOSTS:-}
+      - REQUIRE_PROXY=${REQUIRE_PROXY:-1}
+      - USE_BRIDGES=${USE_BRIDGES:-0}
+      - BOOTSTRAP_TIMEOUT_SECONDS=${BOOTSTRAP_TIMEOUT_SECONDS:-120}
+      - TOR_BRIDGE_1=${TOR_BRIDGE_1:-}
+      - TOR_BRIDGE_2=${TOR_BRIDGE_2:-}
+      - TOR_BRIDGE_3=${TOR_BRIDGE_3:-}
+      - TOR_BRIDGE_4=${TOR_BRIDGE_4:-}
+      - TOR_BRIDGE_5=${TOR_BRIDGE_5:-}
+      - TOR_BRIDGE_6=${TOR_BRIDGE_6:-}
+      - TOR_BRIDGE_7=${TOR_BRIDGE_7:-}
+      - TOR_BRIDGE_8=${TOR_BRIDGE_8:-}
+      - TOR_BRIDGE_9=${TOR_BRIDGE_9:-}
+      - TOR_BRIDGE_10=${TOR_BRIDGE_10:-}
+    ports:
+      - "8095:8095"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '5'
+    deploy:
+      mode: replicated
+      replicas: 1
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+    volumes:
+      - /etc/hostname:/etc/hostname:ro
