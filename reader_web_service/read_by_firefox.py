@@ -67,6 +67,12 @@ def _build_options():
 def read_by_firefox(url, reader=True):
     _log.debug(f'read_by_firefox: {url}')
 
+    # ponytail: Selenium's navigateTo rejects schemeless URLs (e.g. '2ip.ru') with
+    # InvalidArgumentException. Prepend 'http://' when no scheme is present.
+    # Matches Bugsink FIREFOX_READER_WEB_SERVICE-3 fix.
+    if '://' not in url:
+        url = f'http://{url}'
+
     for attempt in range(1, MAX_ATTEMPTS + 1):
         browser = webdriver.Firefox(options=_build_options())
         # ponytail: 30s ceiling — default Selenium page-load timeout is 300s (geckodriver
@@ -112,8 +118,10 @@ def read_by_firefox(url, reader=True):
                     return
 
             return {
-                'title': browser.find_element(
-                    By.TAG_NAME, 'title').get_attribute('innerHTML'),
+                # ponytail: browser.title is Selenium-native — returns '' when the
+                # page has no <title> tag, instead of raising NoSuchElementException
+                # (find_element does). Matches Bugsink FIREFOX_READER_WEB_SERVICE-4 fix.
+                'title': browser.title,
                 'content': browser.find_element(
                     By.TAG_NAME, 'body').get_attribute('innerHTML').strip(),
             }

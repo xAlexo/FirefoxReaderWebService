@@ -5,6 +5,10 @@ S2: Selenium NoSuchWindowException exhausts retries → return None, NO Sentry c
 S3: A genuinely unexpected exception still IS captured to Sentry (regression guard), NOT retried.
 S4: Operational failure on first attempt, success on retry → returns data from 2nd attempt.
 S5: NoSuchWindowException on first attempt, success on retry → returns data from 2nd attempt.
+S6: URL without a scheme (e.g. '2ip.ru') is normalised to http:// before browser.get
+    (Bugsink FIREFOX_READER_WEB_SERVICE-3: InvalidArgumentException).
+S7: Page with no <title> tag → returns {title:'', content:...}, NO Sentry capture
+    (Bugsink FIREFOX_READER_WEB_SERVICE-4: NoSuchElementException).
 """
 import os
 from unittest.mock import MagicMock, patch
@@ -12,7 +16,7 @@ from unittest.mock import MagicMock, patch
 os.environ.setdefault("SENTRY_DSN", "http://fake@localhost/1")
 
 import pytest
-from selenium.common.exceptions import NoSuchWindowException, TimeoutException
+from selenium.common.exceptions import InvalidArgumentException, NoSuchWindowException, TimeoutException
 
 
 @pytest.fixture
@@ -115,8 +119,8 @@ def test_operational_failure_then_success(patched_webdriver, sentry_spy):
     patched_webdriver.browsers.append(bad)
 
     good = MagicMock()
+    good.title = "Example Domain"
     good.find_element.side_effect = [
-        MagicMock(get_attribute=MagicMock(return_value="Example Domain")),
         MagicMock(get_attribute=MagicMock(return_value="<div>hi</div>")),
     ]
     patched_webdriver.browsers.append(good)
@@ -140,8 +144,8 @@ def test_no_such_window_then_success(patched_webdriver, sentry_spy):
     patched_webdriver.browsers.append(bad)
 
     good = MagicMock()
+    good.title = "Title"
     good.find_element.side_effect = [
-        MagicMock(get_attribute=MagicMock(return_value="Title")),
         MagicMock(get_attribute=MagicMock(return_value="<p>body</p>")),
     ]
     patched_webdriver.browsers.append(good)
@@ -152,3 +156,68 @@ def test_no_such_window_then_success(patched_webdriver, sentry_spy):
     assert result["content"] == "<p>body</p>"
     assert not sentry_spy.called
     assert len(patched_webdriver.browsers_made) == 2
+
+
+def test_schemeless_url_normalised_to_http(patched_webdriver, sentry_spy):
+    """S6: '2ip.ru' (no scheme) is normalised to 'http://2ip.ru' before browser.get.
+
+    Regression for Bugsink FIREFOX_READER_WEB_SERVICE-3: Selenium raises
+    InvalidArgumentException when given a schemeless URL. We prepend 'http://'
+    when no scheme is present.
+    """
+    from reader_web_service.read_by_firefox import read_by_firefox
+
+    b = MagicMock()
+    # Simulate real Selenium: InvalidArgumentException when browser.get gets a schemeless URL.
+    # The warm-up get (http://<ip>/) succeeds; the target get with '2ip.ru' would raise.
+    # After the fix, the code normalises before calling get, so no raise + title/content returned.
+    call_state = {"count": 0}
+
+    def fake_get(url):
+        call_state["count"] += 1
+        if "://" not in url:
+            raise InvalidArgumentException(f'Expected "url" to be a valid URL, got {url}')
+
+    b.get.side_effect = fake_get
+    b.title = "2IP"
+    b.find_element.side_effect = [
+        MagicMock(get_attribute=MagicMock(return_value="<body>2ip</body>")),
+    ]
+    patched_webdriver.browsers.append(b)
+
+    result = read_by_firefox("2ip.ru", reader=False)
+    assert result is not None, "schemeless URL should be normalised, not crash"
+    # The second browser.get (target URL) must carry the http:// scheme.
+    target_url = b.get.call_args_list[1].args[0]
+    assert target_url == "http://2ip.ru", (
+        f"schemeless URL must be normalised to http:// — got {target_url!r}"
+    )
+    assert not sentry_spy.called, "normalised URL must not hit Sentry"
+
+
+def test_missing_title_returns_empty_no_sentry(patched_webdriver, sentry_spy):
+    """S7: page with no <title> tag → returns {title:'', content:...}, NO Sentry capture.
+
+    Regression for Bugsink FIREFOX_READER_WEB_SERVICE-4: find_element(By.TAG_NAME,
+    'title') raised NoSuchElementException, which escaped _OPERATIONAL_EXCEPTIONS
+    and was captured to Sentry as a bug. Use browser.title (returns '' if absent).
+    """
+    from reader_web_service.read_by_firefox import read_by_firefox
+
+    b = MagicMock()
+    b.title = ""  # no <title> on the page — browser.title returns '' instead of raising
+    # body is still present; find_element is now called only once (for body),
+    # since title comes from browser.title.
+    b.find_element.side_effect = [
+        MagicMock(get_attribute=MagicMock(return_value="<p>body</p>")),
+    ]
+    patched_webdriver.browsers.append(b)
+
+    result = read_by_firefox("https://example.com", reader=False)
+    assert result is not None, "titleless page should still return content, not None"
+    assert result["title"] == "", "missing title → empty string, not crash"
+    assert result["content"] == "<p>body</p>"
+    assert not sentry_spy.called, (
+        "NoSuchElementException for missing <title> is operational, not a bug — "
+        "must not hit Sentry (now avoided via browser.title)"
+    )
