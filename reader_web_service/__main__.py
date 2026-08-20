@@ -51,6 +51,18 @@ async def root(url, ):
     }))
 
 
+@app.get("/ip")
+async def ip():
+    """Return the exit IP address Firefox uses (through Tor/proxy)."""
+    loop = asyncio.get_running_loop()
+    data = await loop.run_in_executor(None, read_by_firefox, 'http://ifconfig.me/', False)
+    if not data:
+        return JSONResponse(content=jsonable_encoder({"error": "failed to get IP"}), status_code=500)
+    # ifconfig.me returns the IP as the page body text
+    ip = data['content'].strip()
+    return {"ip": ip}
+
+
 @app.get("/html")
 async def html(url, ):
     loop = asyncio.get_running_loop()
