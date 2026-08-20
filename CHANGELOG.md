@@ -1,6 +1,21 @@
 # CHANGELOG
 
 
+## v0.12.1 (2026-08-20)
+
+### Bug Fixes
+
+- Use ip.me instead of ifconfig.me for /ip endpoint
+  ([`1a1c41e`](https://github.com/xAlexo/FirefoxReaderWebService/commit/1a1c41e3e4f6d3bc8f2b86c1868cd174f825d628))
+
+ifconfig.me returns 403 through Tor. ip.me works and embeds IP in <input name="ip" value="x.x.x.x">.
+  Parse with regex.
+
+Ultraworked with [Sisyphus](https://github.com/code-yeongyu/oh-my-openagent)
+
+Co-authored-by: Sisyphus <clio-agent@sisyphuslabs.ai>
+
+
 ## v0.12.0 (2026-08-20)
 
 ### Features
