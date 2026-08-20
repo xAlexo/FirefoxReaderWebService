@@ -1,6 +1,21 @@
 # CHANGELOG
 
 
+## v0.12.0 (2026-08-20)
+
+### Features
+
+- Add /ip endpoint to show Firefox exit IP through Tor
+  ([`9a4c9c0`](https://github.com/xAlexo/FirefoxReaderWebService/commit/9a4c9c02df2b324c15f9393e24c254b58f0a00a2))
+
+GET /ip opens http://ifconfig.me/ via Firefox (through Tor proxy) and returns {"ip": "x.x.x.x"}.
+  Useful to verify the proxy chain is working.
+
+Ultraworked with [Sisyphus](https://github.com/code-yeongyu/oh-my-openagent)
+
+Co-authored-by: Sisyphus <clio-agent@sisyphuslabs.ai>
+
+
 ## v0.11.1 (2026-08-20)
 
 ### Bug Fixes
