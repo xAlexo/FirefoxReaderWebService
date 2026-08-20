@@ -3,3 +3,10 @@
 .github
 .idea
 .omo
+tests
+.pytest_cache
+.ruff_cache
+*.md
+!README.md
+docker-compose*.yaml
+Dockerfile*
