@@ -1,0 +1,7 @@
+SocksPort 127.0.0.1:9050
+DataDirectory /var/lib/tor
+Log notice stdout
+
+ClientOnly 1
+AvoidDiskWrites 1
+RunAsDaemon 0
