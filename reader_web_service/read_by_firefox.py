@@ -1,5 +1,6 @@
 import json
 import socket
+from urllib.parse import urlparse
 
 import sentry_sdk
 from loguru import logger as _log
@@ -8,6 +9,8 @@ from selenium.common.exceptions import NoSuchWindowException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.wait import WebDriverWait
+
+from reader_web_service.proxy_router import get_proxy_for_host
 
 # Operational Selenium failures (page-load timeout, discarded browsing context)
 # are expected in production — they must NOT be captured to Sentry as bugs.
@@ -32,16 +35,40 @@ try {
 }
 """
 
-firefox_options = Options()
-firefox_options.add_argument("--headless")
-firefox_options.set_preference("permissions.default.image", 2)
+
+def _build_options():
+    """Build Firefox Options with headless + SOCKS5 proxy from TOR_PROXY.
+
+    When ``TOR_PROXY`` is set (default ``socks5h://127.0.0.1:9050``), Firefox
+    is configured to route all traffic through the local Tor SOCKS5 port.
+    ``socks5h`` (remote DNS) is handled by setting
+    ``network.proxy.socks_remote_dns = true`` so DNS resolution happens at the
+    proxy, preventing DNS leaks.
+    """
+    opts = Options()
+    opts.add_argument('--headless')
+    opts.set_preference('permissions.default.image', 2)
+
+    proxy = get_proxy_for_host('')
+    if proxy:
+        parsed = urlparse(proxy)
+        host = parsed.hostname or '127.0.0.1'
+        port = parsed.port or 9050
+        opts.set_preference('network.proxy.type', 1)
+        opts.set_preference('network.proxy.socks', host)
+        opts.set_preference('network.proxy.socks_port', port)
+        opts.set_preference('network.proxy.socks_version', 5)
+        opts.set_preference('network.proxy.socks_remote_dns', True)
+        _log.debug(f'Firefox SOCKS5 proxy: {host}:{port}')
+
+    return opts
 
 
 def read_by_firefox(url, reader=True):
     _log.debug(f'read_by_firefox: {url}')
 
     for attempt in range(1, MAX_ATTEMPTS + 1):
-        browser = webdriver.Firefox(options=firefox_options)
+        browser = webdriver.Firefox(options=_build_options())
         # ponytail: 30s ceiling — default Selenium page-load timeout is 300s (geckodriver
         # transport raises ReadTimeoutError at 120s). Keeping it explicit prevents the
         # 120s hang observed in Bugsink FIREFOX_READER_WEB_SERVICE-1.
