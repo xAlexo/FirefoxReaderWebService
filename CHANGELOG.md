@@ -1,6 +1,21 @@
 # CHANGELOG
 
 
+## v0.10.1 (2026-08-20)
+
+### Bug Fixes
+
+- Copy README.md to builder stage for hatchling build
+  ([`2842242`](https://github.com/xAlexo/FirefoxReaderWebService/commit/284224227c2c8b9945ee0a341b9ed7d95e0733f4))
+
+pyproject.toml declares readme = README.md; hatchling fails with OSError if the file is missing
+  during uv sync --frozen --no-dev.
+
+Ultraworked with [Sisyphus](https://github.com/code-yeongyu/oh-my-openagent)
+
+Co-authored-by: Sisyphus <clio-agent@sisyphuslabs.ai>
+
+
 ## v0.10.0 (2026-08-20)
 
 ### Features
