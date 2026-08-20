@@ -1,6 +1,21 @@
 # CHANGELOG
 
 
+## v0.11.1 (2026-08-20)
+
+### Bug Fixes
+
+- Add xz-utils to runtime stage for Firefox tar.xz extraction
+  ([`274d0f0`](https://github.com/xAlexo/FirefoxReaderWebService/commit/274d0f041631dc7441713ce959353f5d9394cfe9))
+
+python:3.13-slim does not include xz-utils; tar xJf fails with "xz: Cannot exec". The full
+  python:3.13 image had it preinstalled.
+
+Ultraworked with [Sisyphus](https://github.com/code-yeongyu/oh-my-openagent)
+
+Co-authored-by: Sisyphus <clio-agent@sisyphuslabs.ai>
+
+
 ## v0.11.0 (2026-08-20)
 
 ### Documentation
