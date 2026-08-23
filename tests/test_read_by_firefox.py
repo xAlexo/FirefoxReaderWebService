@@ -9,8 +9,12 @@ S6: URL without a scheme (e.g. '2ip.ru') is normalised to http:// before browser
     (Bugsink FIREFOX_READER_WEB_SERVICE-3: InvalidArgumentException).
 S7: Page with no <title> tag → returns {title:'', content:...}, NO Sentry capture
     (Bugsink FIREFOX_READER_WEB_SERVICE-4: NoSuchElementException).
+S8: Warm-up DNS lookup (socket.gethostbyname) fails with gaierror → warm-up is
+    skipped, target URL still loads, NO Sentry capture
+    (Bugsink FIREFOX_READER_WEB_SERVICE-5: gaierror on /ping).
 """
 import os
+import socket
 from unittest.mock import MagicMock, patch
 
 os.environ.setdefault("SENTRY_DSN", "http://fake@localhost/1")
@@ -220,4 +224,41 @@ def test_missing_title_returns_empty_no_sentry(patched_webdriver, sentry_spy):
     assert not sentry_spy.called, (
         "NoSuchElementException for missing <title> is operational, not a bug — "
         "must not hit Sentry (now avoided via browser.title)"
+    )
+
+
+def test_warmup_dns_failure_skips_warmup_no_sentry(patched_webdriver, sentry_spy):
+    """S8: socket.gethostbyname('ifconfig.me') raising gaierror → warm-up skipped,
+    target URL still loads, NO Sentry capture.
+
+    Regression for Bugsink FIREFOX_READER_WEB_SERVICE-5: the warm-up DNS lookup
+    ran on the host (outside Tor) and failed with 'Temporary failure in name
+    resolution', escaping _OPERATIONAL_EXCEPTIONS, hitting Sentry, and aborting.
+    The warm-up is best-effort — the target URL loads through Tor regardless.
+    """
+    from reader_web_service.read_by_firefox import read_by_firefox
+
+    b = MagicMock()
+    b.title = "Example Domain"
+    b.find_element.side_effect = [
+        MagicMock(get_attribute=MagicMock(return_value="<div>hi</div>")),
+    ]
+    patched_webdriver.browsers.append(b)
+
+    with patch("reader_web_service.read_by_firefox.socket") as mock_socket:
+        mock_socket.gethostbyname.side_effect = socket.gaierror(
+            -3, "Temporary failure in name resolution"
+        )
+        result = read_by_firefox("https://example.com", reader=False)
+
+    assert result is not None, "warm-up DNS failure must not abort the request"
+    assert result["title"] == "Example Domain"
+    assert result["content"] == "<div>hi</div>"
+    # Target URL must still be opened (the second browser.get call).
+    target_url = b.get.call_args_list[-1].args[0]
+    assert target_url == "https://example.com", (
+        f"target URL must still be opened after warm-up failure — got {target_url!r}"
+    )
+    assert not sentry_spy.called, (
+        "warm-up DNS failure is operational, not a bug — must not hit Sentry"
     )

@@ -82,10 +82,19 @@ def read_by_firefox(url, reader=True):
 
         try:
             _log.debug(f'Opening: {url} (attempt {attempt}/{MAX_ATTEMPTS})')
-            ip = socket.gethostbyname('ifconfig.me')
-            _log.debug(f'IP: {ip}')
-            _log.debug('Opening by IP')
-            browser.get(f'http://{ip}/')
+            # ponytail: warm-up is best-effort. The host-side DNS lookup
+            # (socket.gethostbyname) runs outside Tor, so it can fail when the
+            # container DNS is wedged (Bugsink FIREFOX_READER_WEB_SERVICE-5:
+            # gaierror escaped _OPERATIONAL_EXCEPTIONS, hit Sentry, aborted).
+            # The target URL loads through Tor regardless — skip warm-up on
+            # OSError (covers gaierror) and proceed to the target.
+            try:
+                ip = socket.gethostbyname('ifconfig.me')
+                _log.debug(f'IP: {ip}')
+                _log.debug('Opening by IP')
+                browser.get(f'http://{ip}/')
+            except OSError as e:
+                _log.debug(f'Warm-up DNS/navigation skipped: {e}')
             _log.debug('Opening by URL')
             browser.get(url)
             _log.debug('Opened')
