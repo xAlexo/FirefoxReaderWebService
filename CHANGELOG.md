@@ -1,6 +1,24 @@
 # CHANGELOG
 
 
+## v0.12.3 (2026-08-23)
+
+### Bug Fixes
+
+- Make warm-up DNS lookup best-effort to survive host DNS failures
+  ([`b3ce079`](https://github.com/xAlexo/FirefoxReaderWebService/commit/b3ce0794cc29f5127e4e487a16cafc50589f664f))
+
+socket.gethostbyname('ifconfig.me') runs on the host (outside Tor) and can fail with gaierror when
+  the container DNS is wedged. The gaierror escaped _OPERATIONAL_EXCEPTIONS (Selenium-only), hit
+  Sentry, and aborted the request without retry. The warm-up is a workaround, not load-bearing — the
+  target URL loads through Tor regardless.
+
+Wrap the warm-up DNS lookup + warm-up browser.get in try/except OSError (covers gaierror); on
+  failure, log and proceed to the target URL.
+
+Bugsink FIREFOX_READER_WEB_SERVICE-5
+
+
 ## v0.12.2 (2026-08-20)
 
 ### Bug Fixes
