@@ -1,6 +1,24 @@
 # CHANGELOG
 
 
+## v0.12.5 (2026-08-24)
+
+### Bug Fixes
+
+- Treat WebDriverException from target navigation as operational
+  ([`01ff512`](https://github.com/xAlexo/FirefoxReaderWebService/commit/01ff512c302882fd947eac47cf06c5e85a3814f4))
+
+When the Tor node is unreachable, Firefox loads about:neterror and Selenium raises
+  WebDriverException from the *target* browser.get(url) (not just the warm-up). That escaped
+  _OPERATIONAL_EXCEPTIONS, hit Sentry as a bug, and aborted on the first attempt without retrying —
+  even though it is the same operational class as TimeoutException (transient network failure, worth
+  a fresh browser).
+
+Added WebDriverException to _OPERATIONAL_EXCEPTIONS so target-navigation failures retry up to
+  MAX_ATTEMPTS and do not spam Sentry. Test S10 added
+  (test_target_webdriver_exception_retries_no_sentry) — RED→GREEN, 30/30 pass.
+
+
 ## v0.12.4 (2026-08-24)
 
 ### Bug Fixes
