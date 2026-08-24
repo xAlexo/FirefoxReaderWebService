@@ -16,11 +16,12 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 from reader_web_service.proxy_router import get_proxy_for_host
 
-# Operational Selenium failures (page-load timeout, discarded browsing context)
-# are expected in production — they must NOT be captured to Sentry as bugs.
-# They ARE retried: a transient timeout or crashed context often succeeds on a
-# fresh browser instance.
-_OPERATIONAL_EXCEPTIONS = (TimeoutException, NoSuchWindowException)
+# Operational Selenium failures (page-load timeout, discarded browsing context,
+# unreachable host through Tor → about:neterror) are expected in production —
+# they must NOT be captured to Sentry as bugs. They ARE retried: a transient
+# timeout, crashed context, or dead Tor node often succeeds on a fresh browser
+# instance.
+_OPERATIONAL_EXCEPTIONS = (TimeoutException, NoSuchWindowException, WebDriverException)
 MAX_ATTEMPTS = 3
 
 READABILITY_URL = 'https://cdn.jsdelivr.net/npm/@mozilla/readability@0.5.0/Readability.js'

@@ -16,6 +16,9 @@ S9: Warm-up navigation (browser.get to resolved IP) raises WebDriverException
     (e.g. about:neterror connectionFailure) → warm-up skipped, target URL still
     loads, NO Sentry capture
     (Bugsink FIREFOX_READER_WEB_SERVICE-6: WebDriverException on /ping).
+S10: Target navigation (browser.get(url)) raises WebDriverException (Tor node
+    unreachable → about:neterror) on every attempt → retries, return None, NO
+    Sentry capture. Same operational class as TimeoutException.
 """
 import os
 import socket
@@ -321,3 +324,47 @@ def test_warmup_navigation_failure_skips_warmup_no_sentry(patched_webdriver, sen
     assert not sentry_spy.called, (
         "warm-up navigation failure is operational, not a bug — must not hit Sentry"
     )
+
+
+def test_target_webdriver_exception_retries_no_sentry(patched_webdriver, sentry_spy):
+    """S10: target browser.get(url) raising WebDriverException on every attempt
+    → return None, NO Sentry capture, MAX_ATTEMPTS retries.
+
+    Regression for the gap left after FIREFOX_READER_WEB_SERVICE-6: when the
+    Tor node is unreachable, Firefox shows about:neterror and Selenium raises
+    WebDriverException from the *target* navigation (not just warm-up). That
+    escaped _OPERATIONAL_EXCEPTIONS, hit Sentry, and aborted on the first
+    attempt without retrying — even though it is the same operational class as
+    TimeoutException (transient network failure, worth a fresh browser).
+    """
+    from reader_web_service.read_by_firefox import MAX_ATTEMPTS, read_by_firefox
+
+    for _ in range(MAX_ATTEMPTS):
+        b = MagicMock()
+        # Warm-up succeeds; the target get raises WebDriverException (Tor node
+        # unreachable → about:neterror?e=connectionFailure).
+        call_state = {"count": 0}
+
+        def fake_get(url):
+            call_state["count"] += 1
+
+        b.get.side_effect = [
+            None,  # warm-up navigation to resolved IP
+            WebDriverException("Reached error page: about:neterror?e=connectionFailure"),
+        ]
+        patched_webdriver.browsers.append(b)
+
+    with patch("reader_web_service.read_by_firefox.socket") as mock_socket:
+        mock_socket.gethostbyname.return_value = "34.160.111.145"
+        result = read_by_firefox("https://example.com", reader=False)
+
+    assert result is None, "WebDriverException from target must exhaust retries → None"
+    assert not sentry_spy.called, (
+        "WebDriverException from target navigation is operational, not a bug "
+        "— must not hit Sentry"
+    )
+    assert len(patched_webdriver.browsers_made) == MAX_ATTEMPTS, (
+        f"should retry {MAX_ATTEMPTS} times (one browser per attempt)"
+    )
+    for b in patched_webdriver.browsers_made:
+        assert b.quit.called, "every attempt's browser must be quit"
