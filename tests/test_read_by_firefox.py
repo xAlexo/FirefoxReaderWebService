@@ -12,6 +12,10 @@ S7: Page with no <title> tag → returns {title:'', content:...}, NO Sentry capt
 S8: Warm-up DNS lookup (socket.gethostbyname) fails with gaierror → warm-up is
     skipped, target URL still loads, NO Sentry capture
     (Bugsink FIREFOX_READER_WEB_SERVICE-5: gaierror on /ping).
+S9: Warm-up navigation (browser.get to resolved IP) raises WebDriverException
+    (e.g. about:neterror connectionFailure) → warm-up skipped, target URL still
+    loads, NO Sentry capture
+    (Bugsink FIREFOX_READER_WEB_SERVICE-6: WebDriverException on /ping).
 """
 import os
 import socket
@@ -20,7 +24,12 @@ from unittest.mock import MagicMock, patch
 os.environ.setdefault("SENTRY_DSN", "http://fake@localhost/1")
 
 import pytest
-from selenium.common.exceptions import InvalidArgumentException, NoSuchWindowException, TimeoutException
+from selenium.common.exceptions import (
+    InvalidArgumentException,
+    NoSuchWindowException,
+    TimeoutException,
+    WebDriverException,
+)
 
 
 @pytest.fixture
@@ -261,4 +270,54 @@ def test_warmup_dns_failure_skips_warmup_no_sentry(patched_webdriver, sentry_spy
     )
     assert not sentry_spy.called, (
         "warm-up DNS failure is operational, not a bug — must not hit Sentry"
+    )
+
+
+def test_warmup_navigation_failure_skips_warmup_no_sentry(patched_webdriver, sentry_spy):
+    """S9: warm-up browser.get(http://<ip>/) raising WebDriverException → warm-up
+    skipped, target URL still loads, NO Sentry capture.
+
+    Regression for Bugsink FIREFOX_READER_WEB_SERVICE-6: the resolved IP was
+    unreachable through Tor (about:neterror?e=connectionFailure), so
+    browser.get raised WebDriverException, which escaped the warm-up's
+    `except OSError` clause, hit the outer `except Exception`, was captured to
+    Sentry as a bug, and aborted the request. The warm-up is best-effort — the
+    target URL loads through Tor regardless.
+    """
+    from reader_web_service.read_by_firefox import read_by_firefox
+
+    b = MagicMock()
+    # Warm-up get raises WebDriverException (IP unreachable); target get succeeds.
+    call_state = {"count": 0}
+
+    def fake_get(url):
+        call_state["count"] += 1
+        if call_state["count"] == 1:
+            # Warm-up to resolved IP unreachable — Firefox shows about:neterror.
+            raise WebDriverException(
+                "Reached error page: about:neterror?e=connectionFailure"
+            )
+        # target URL loads fine
+
+    b.get.side_effect = fake_get
+    b.title = "Example Domain"
+    b.find_element.side_effect = [
+        MagicMock(get_attribute=MagicMock(return_value="<div>hi</div>")),
+    ]
+    patched_webdriver.browsers.append(b)
+
+    with patch("reader_web_service.read_by_firefox.socket") as mock_socket:
+        mock_socket.gethostbyname.return_value = "34.160.111.145"
+        result = read_by_firefox("https://example.com", reader=False)
+
+    assert result is not None, "warm-up navigation failure must not abort the request"
+    assert result["title"] == "Example Domain"
+    assert result["content"] == "<div>hi</div>"
+    # Target URL must still be opened (the second browser.get call).
+    target_url = b.get.call_args_list[-1].args[0]
+    assert target_url == "https://example.com", (
+        f"target URL must still be opened after warm-up failure — got {target_url!r}"
+    )
+    assert not sentry_spy.called, (
+        "warm-up navigation failure is operational, not a bug — must not hit Sentry"
     )

@@ -5,7 +5,11 @@ from urllib.parse import urlparse
 import sentry_sdk
 from loguru import logger as _log
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchWindowException, TimeoutException
+from selenium.common.exceptions import (
+    NoSuchWindowException,
+    TimeoutException,
+    WebDriverException,
+)
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.wait import WebDriverWait
@@ -86,14 +90,17 @@ def read_by_firefox(url, reader=True):
             # (socket.gethostbyname) runs outside Tor, so it can fail when the
             # container DNS is wedged (Bugsink FIREFOX_READER_WEB_SERVICE-5:
             # gaierror escaped _OPERATIONAL_EXCEPTIONS, hit Sentry, aborted).
-            # The target URL loads through Tor regardless — skip warm-up on
-            # OSError (covers gaierror) and proceed to the target.
+            # The warm-up navigation itself can also fail when the resolved IP
+            # is unreachable through Tor — Firefox shows about:neterror and
+            # Selenium raises WebDriverException (Bugsink
+            # FIREFOX_READER_WEB_SERVICE-6), which is NOT an OSError. Catch
+            # both so the target URL loads through Tor regardless.
             try:
                 ip = socket.gethostbyname('ifconfig.me')
                 _log.debug(f'IP: {ip}')
                 _log.debug('Opening by IP')
                 browser.get(f'http://{ip}/')
-            except OSError as e:
+            except (OSError, WebDriverException) as e:
                 _log.debug(f'Warm-up DNS/navigation skipped: {e}')
             _log.debug('Opening by URL')
             browser.get(url)
