@@ -1,6 +1,25 @@
 # CHANGELOG
 
 
+## v0.12.4 (2026-08-24)
+
+### Bug Fixes
+
+- Catch WebDriverException in warm-up navigation to survive unreachable IPs
+  ([`fbb0195`](https://github.com/xAlexo/FirefoxReaderWebService/commit/fbb0195cae3090c902b1b76969e489cf4f4bbb4e))
+
+Warm-up browser.get(http://<resolved-ip>/) raised WebDriverException (Firefox
+  about:neterror?e=connectionFailure) when the resolved IP was unreachable through Tor. The warm-up
+  except clause only caught OSError, so the WebDriverException escaped to the outer except
+  Exception, hit Sentry, and aborted the request — even though the target URL loads through Tor
+  regardless of warm-up outcome.
+
+Broadened the warm-up except to (OSError, WebDriverException) and added test S9
+  (test_warmup_navigation_failure_skips_warmup_no_sentry) — RED→GREEN.
+
+Bugsink FIREFOX_READER_WEB_SERVICE-6.
+
+
 ## v0.12.3 (2026-08-23)
 
 ### Bug Fixes
