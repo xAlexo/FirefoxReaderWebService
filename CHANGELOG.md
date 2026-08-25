@@ -1,6 +1,23 @@
 # CHANGELOG
 
 
+## v0.12.6 (2026-08-25)
+
+### Bug Fixes
+
+- Retry webdriver.Firefox() constructor failures as operational
+  ([`5ac9753`](https://github.com/xAlexo/FirefoxReaderWebService/commit/5ac9753d90c362c2900af11a30eae2a422c0a589))
+
+The constructor sat outside the try/except _OPERATIONAL_EXCEPTIONS block, so a transient
+  WebDriverException during session creation (e.g. 'Failed to decode response from marionette' —
+  geckodriver/Firefox startup race) escaped the retry loop, hit the caller as a 500, and was
+  captured to Sentry as a bug. Moved the constructor + set_page_load_timeout inside the try block
+  and guarded finally:browser.quit() for the constructor-raises path. Same operational class as a
+  page-load timeout — retry on a fresh browser, no Sentry.
+
+Bugsink FIREFOX_READER_WEB_SERVICE-8.
+
+
 ## v0.12.5 (2026-08-24)
 
 ### Bug Fixes
