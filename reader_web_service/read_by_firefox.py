@@ -79,13 +79,23 @@ def read_by_firefox(url, reader=True):
         url = f'http://{url}'
 
     for attempt in range(1, MAX_ATTEMPTS + 1):
-        browser = webdriver.Firefox(options=_build_options())
-        # ponytail: 30s ceiling — default Selenium page-load timeout is 300s (geckodriver
-        # transport raises ReadTimeoutError at 120s). Keeping it explicit prevents the
-        # 120s hang observed in Bugsink FIREFOX_READER_WEB_SERVICE-1.
-        browser.set_page_load_timeout(30)
-
+        # ponytail: webdriver.Firefox() can raise WebDriverException during
+        # session creation (transient geckodriver/Firefox startup race —
+        # "Failed to decode response from marionette", Bugsink
+        # FIREFOX_READER_WEB_SERVICE-8). The constructor MUST sit inside the
+        # try/except _OPERATIONAL_EXCEPTIONS block so it retries on a fresh
+        # browser instead of escaping to the caller as a 500 + Sentry bug.
+        # `browser` is bound only when the constructor returns; the finally
+        # guard handles the constructor-raises path (no browser to quit).
+        browser = None
         try:
+            browser = webdriver.Firefox(options=_build_options())
+            # ponytail: 30s ceiling — default Selenium page-load timeout is
+            # 300s (geckodriver transport raises ReadTimeoutError at 120s).
+            # Keeping it explicit prevents the 120s hang observed in Bugsink
+            # FIREFOX_READER_WEB_SERVICE-1.
+            browser.set_page_load_timeout(30)
+
             _log.debug(f'Opening: {url} (attempt {attempt}/{MAX_ATTEMPTS})')
             # ponytail: warm-up is best-effort. The host-side DNS lookup
             # (socket.gethostbyname) runs outside Tor, so it can fail when the
@@ -150,7 +160,8 @@ def read_by_firefox(url, reader=True):
             sentry_sdk.capture_exception(e)
             return None
         finally:
-            browser.quit()
+            if browser is not None:
+                browser.quit()
 
     return None
 

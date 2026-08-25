@@ -19,6 +19,12 @@ S9: Warm-up navigation (browser.get to resolved IP) raises WebDriverException
 S10: Target navigation (browser.get(url)) raises WebDriverException (Tor node
     unreachable → about:neterror) on every attempt → retries, return None, NO
     Sentry capture. Same operational class as TimeoutException.
+S11: webdriver.Firefox() constructor itself raises WebDriverException (e.g.
+    "Failed to decode response from marionette" — transient geckodriver/Firefox
+    startup race) on first attempt, succeeds on retry → returns data from 2nd
+    attempt, NO Sentry capture
+    (Bugsink FIREFOX_READER_WEB_SERVICE-8: constructor failure escaped the
+    retry loop because webdriver.Firefox() sat outside try/except).
 """
 import os
 import socket
@@ -368,3 +374,51 @@ def test_target_webdriver_exception_retries_no_sentry(patched_webdriver, sentry_
     )
     for b in patched_webdriver.browsers_made:
         assert b.quit.called, "every attempt's browser must be quit"
+
+
+def test_constructor_failure_retries_no_sentry(patched_webdriver, sentry_spy):
+    """S11: webdriver.Firefox() raising WebDriverException on the first call
+    (transient marionette/geckodriver startup failure), then succeeding on the
+    second call → returns data from the 2nd attempt, NO Sentry capture.
+
+    Regression for Bugsink FIREFOX_READER_WEB_SERVICE-8: the constructor
+    `webdriver.Firefox(options=...)` sat OUTSIDE the try/except
+    _OPERATIONAL_EXCEPTIONS block, so a WebDriverException raised during
+    session creation escaped the retry loop, hit the caller as a 500, and was
+    captured to Sentry as a bug. The fix moves the constructor inside the try
+    block so constructor failures retry on a fresh browser (same operational
+    class as a page-load timeout).
+    """
+    from reader_web_service.read_by_firefox import read_by_firefox
+
+    # First Firefox() call raises WebDriverException during session creation.
+    # Second Firefox() call succeeds and returns a working browser.
+    good = MagicMock()
+    good.title = "Example Domain"
+    good.find_element.side_effect = [
+        MagicMock(get_attribute=MagicMock(return_value="<div>hi</div>")),
+    ]
+
+    call_state = {"count": 0}
+
+    def fake_firefox(*args, **kwargs):
+        call_state["count"] += 1
+        if call_state["count"] == 1:
+            raise WebDriverException("Failed to decode response from marionette")
+        return good
+
+    patched_webdriver.Firefox.side_effect = fake_firefox
+
+    result = read_by_firefox("https://example.com", reader=False)
+
+    assert result is not None, (
+        "constructor failure must retry on a fresh browser, not abort"
+    )
+    assert result["title"] == "Example Domain"
+    assert result["content"] == "<div>hi</div>"
+    assert not sentry_spy.called, (
+        "WebDriverException from the constructor is operational (transient "
+        "browser startup), not a bug — must not hit Sentry"
+    )
+    assert call_state["count"] == 2, "exactly 2 Firefox() calls (fail then succeed)"
+    assert good.quit.called, "successful attempt's browser must be quit"
