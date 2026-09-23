@@ -1,6 +1,23 @@
 # CHANGELOG
 
 
+## v0.12.7 (2026-09-23)
+
+### Bug Fixes
+
+- Replace Selenium/geckodriver with Camoufox
+  ([`9c0f443`](https://github.com/xAlexo/FirefoxReaderWebService/commit/9c0f443b3793fbcb828972ec919b7d72038f8c3d))
+
+geckodriver session creation hung at TLS handshake through the Tor SOCKS5 proxy: ReadTimeoutError at
+  120s, then the SIGTERM shutdown timed out after 60s and left ConnectionResetError in the logs
+  (Bugsink FIREFOX_READER_WEB_SERVICE-1, -2, -3 — 90 events). Selenium's geckodriver transport has
+  no way to bound new-session time through a SOCKS proxy.
+
+Camoufox (Playwright-based Firefox) launches through the same SOCKS5 Tor proxy with a 30s navigation
+  ceiling, per-attempt retries, and a context manager that guarantees browser teardown. geckodriver
+  and the hand-built Firefox are removed from the Dockerfile; tests rewritten (32 passing).
+
+
 ## v0.12.6 (2026-08-25)
 
 ### Bug Fixes
