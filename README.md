@@ -1,6 +1,6 @@
 # FirefoxReaderWebService
 
-FastAPI web service that uses headless Firefox (via Selenium) to scrape web pages through Firefox's built-in Reader Mode or as raw HTML. Runs inside Docker with Tor for anonymity.
+FastAPI web service that uses headless Camoufox — an anti-detect Firefox fork (via Playwright) — to scrape web pages through a reader-style parser or as raw HTML. Runs inside Docker with Tor for anonymity.
 
 ## Endpoints
 
@@ -55,4 +55,4 @@ uv sync --no-dev
 uv run uvicorn reader_web_service:app --host 0.0.0.0 --port 8095
 ```
 
-Requires Firefox and geckodriver installed and on `PATH`. The Docker image handles this automatically.
+Requires the Camoufox browser binary: `uv run python -m camoufox fetch`. The Docker image handles this automatically.

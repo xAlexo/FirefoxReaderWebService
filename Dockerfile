@@ -15,7 +15,7 @@ COPY reader_web_service ./reader_web_service
 COPY README.md ./
 RUN uv sync --frozen --no-dev
 
-# Runtime stage: Firefox + geckodriver + Tor
+# Runtime stage: camoufox browser + Tor
 FROM python:3.13-slim AS runner
 
 ENV LANG=C.UTF-8
@@ -27,29 +27,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-liberation libayatana-appindicator3-1 libasound2t64 \
     libatk-bridge2.0-0t64 libatk1.0-0t64 libgtk-3-0t64 \
     libnspr4 libnss3 lsb-release xdg-utils libxss1 libdbus-glib-1-2 \
-    curl unzip wget xvfb jq xz-utils \
+    libx11-xcb1 curl unzip wget xvfb xz-utils \
     tor obfs4proxy tini netcat-openbsd \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-
-RUN GECKODRIVER_VERSION=$(curl -s https://api.github.com/repos/mozilla/geckodriver/releases/latest | jq -r .tag_name) && \
-    wget https://github.com/mozilla/geckodriver/releases/download/$GECKODRIVER_VERSION/geckodriver-$GECKODRIVER_VERSION-linux64.tar.gz && \
-    tar -zxf geckodriver-$GECKODRIVER_VERSION-linux64.tar.gz -C /usr/local/bin && \
-    chmod +x /usr/local/bin/geckodriver && \
-    rm geckodriver-$GECKODRIVER_VERSION-linux64.tar.gz
-
-RUN FIREFOX_SETUP=firefox-setup.tar.xz && \
-    apt-get purge -y firefox || true && \
-    wget -O $FIREFOX_SETUP "https://download.mozilla.org/?product=firefox-latest&os=linux64" && \
-    tar xJf $FIREFOX_SETUP -C /opt/ && \
-    ln -s /opt/firefox/firefox /usr/bin/firefox && \
-    rm $FIREFOX_SETUP
 
 RUN mkdir -p /etc/tor /var/lib/tor /var/log/tor \
     && chown -R root:root /var/lib/tor /var/log/tor
 
 WORKDIR /app
 COPY --from=builder /app /app
+
+# Fetch the camoufox browser binary into the image (~633MB layer, cached by buildx).
+# Must run after the builder copy — the venv from the builder provides `camoufox`.
+RUN python -m camoufox fetch
 
 COPY torrc /etc/tor/torrc
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
