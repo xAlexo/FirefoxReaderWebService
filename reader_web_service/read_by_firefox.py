@@ -53,7 +53,16 @@ def _build_camoufox_kwargs():
         parsed = urlparse(proxy)
         host = parsed.hostname or '127.0.0.1'
         port = parsed.port or 9050
+        # socks5h:// is not a Playwright proxy scheme — Firefox's Juggler
+        # driver (toJugglerProxyOptions) matches only socks4:/socks5:/http:/
+        # https: and silently falls back to an HTTP proxy for anything else,
+        # so Firefox would send HTTP CONNECT to the Tor SOCKS port (Tor logs
+        # "Socks version 67 not recognized" — 67 = ASCII 'C'). Normalise to
+        # socks5; the remote-DNS semantics of the 'h' suffix are preserved via
+        # network.proxy.socks_remote_dns below.
         scheme = parsed.scheme or 'socks5'
+        if scheme == 'socks5h':
+            scheme = 'socks5'
         proxy_dict = {'server': f'{scheme}://{host}:{port}'}
         if parsed.username:
             proxy_dict['username'] = parsed.username

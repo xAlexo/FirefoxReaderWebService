@@ -18,6 +18,13 @@ S11: Camoufox() launch itself raises PlaywrightError (transient browser startup
     NO Sentry capture (Bugsink FIREFOX_READER_WEB_SERVICE-8: constructor
     failures must retry on a fresh browser).
 
+PR1: TOR_PROXY='socks5h://...' → Playwright proxy dict gets server='socks5://...'.
+    socks5h is not a Playwright scheme; Firefox's Juggler driver silently
+    falls back to an HTTP proxy for unknown schemes, so Firefox sent HTTP
+    CONNECT to the Tor SOCKS port ("Socks version 67 not recognized",
+    67 = ASCII 'C'). Regression guard: the 'h' (remote DNS) must be dropped
+    from the scheme — network.proxy.socks_remote_dns already covers it.
+
 Warm-up scenarios S8/S9 were deleted with the warm-up navigation itself —
 entrypoint.sh already waits for Tor bootstrap 100% before the app starts.
 
@@ -378,3 +385,38 @@ def test_neterror_then_success(patched_camoufox, sentry_spy):
     assert result["content"] == "<div>hi</div>"
     assert not sentry_spy.called, "neterror retries are operational, not a bug"
     assert len(patched_camoufox.entered) == 2
+
+
+def test_socks5h_scheme_normalised_for_playwright(monkeypatch, patched_camoufox):
+    """PR1: TOR_PROXY='socks5h://127.0.0.1:9050' → Camoufox receives
+    proxy={'server': 'socks5://127.0.0.1:9050', ...} plus
+    firefox_user_prefs['network.proxy.socks_remote_dns']=True.
+
+    Regression for the "Socks version 67 not recognized" Tor error: Playwright
+    silently treats an unknown scheme (socks5h) as an HTTP proxy, so Firefox
+    sent HTTP CONNECT to the Tor SOCKS port. The 'h' semantics (remote DNS)
+    are preserved via the socks_remote_dns Firefox pref instead.
+    """
+    import importlib
+
+    monkeypatch.setenv("TOR_PROXY", "socks5h://127.0.0.1:9050")
+    import reader_web_service.config
+    importlib.reload(reader_web_service.config)
+
+    from reader_web_service.read_by_firefox import read_by_firefox
+
+    b = MagicMock()
+    b.new_page.return_value = _good_page()
+    patched_camoufox.browsers.append(b)
+
+    read_by_firefox("https://example.com", reader=False)
+
+    launch_kwargs = patched_camoufox.call_args.kwargs
+    assert launch_kwargs["proxy"] == {"server": "socks5://127.0.0.1:9050"}, (
+        "socks5h scheme must be normalised to socks5 before reaching Playwright — "
+        "the Juggler driver treats unknown schemes as HTTP proxies"
+    )
+    prefs = launch_kwargs["firefox_user_prefs"]
+    assert prefs.get("network.proxy.socks_remote_dns") is True, (
+        "remote-DNS semantics of socks5h must be preserved via the Firefox pref"
+    )
