@@ -1,6 +1,27 @@
 # CHANGELOG
 
 
+## v0.12.8 (2026-09-24)
+
+### Bug Fixes
+
+- Normalise socks5h scheme to socks5 for Playwright proxy
+  ([`1130b59`](https://github.com/xAlexo/FirefoxReaderWebService/commit/1130b59ff1f3c6cf714888b1f1583298e81e7412))
+
+TOR_PROXY defaults to 'socks5h://127.0.0.1:9050', but socks5h is not a Playwright proxy scheme.
+  Firefox's Juggler driver (toJugglerProxyOptions) matches only socks4:/socks5:/http:/https: and
+  silently falls back to an HTTP proxy for unknown schemes — so Firefox sent HTTP CONNECT to the Tor
+  SOCKS port, and Tor logged 'Socks version 67 not recognized' (67 = ASCII 'C' from 'CONNECT') on
+  every request.
+
+Normalise socks5h -> socks5 in _build_camoufox_kwargs. The remote-DNS semantics of the 'h' suffix
+  are preserved via the existing network.proxy.socks_remote_dns Firefox pref.
+
+The failure never reached Sentry by design: it surfaced inside the browser as
+  about:neterror/timeout, which the operational-exceptions filter retries silently instead of
+  capturing.
+
+
 ## v0.12.7 (2026-09-23)
 
 ### Bug Fixes
