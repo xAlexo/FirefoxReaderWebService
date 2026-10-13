@@ -1,4 +1,5 @@
 """Unit tests for FastAPI endpoints — mocking read_by_firefox, no Firefox needed."""
+
 import os
 from unittest.mock import patch
 
@@ -12,7 +13,9 @@ from fastapi.testclient import TestClient
 @pytest.fixture
 def client():
     from reader_web_service.__main__ import app
-    return TestClient(app)
+
+    with TestClient(app) as test_client:
+        yield test_client
 
 
 @patch("reader_web_service.__main__.read_by_firefox")
@@ -114,3 +117,20 @@ def test_ip_parse_failure(mock_read, client):
     resp = client.get("/ip")
     assert resp.status_code == 500
     assert resp.json() == {"error": "could not parse IP"}
+
+
+@patch("reader_web_service.__main__.read_by_firefox")
+def test_browser_queue_full_returns_503(mock_read, client, monkeypatch):
+    from reader_web_service.__main__ import app
+    from reader_web_service.browser_capacity import BrowserBusy
+
+    class FullQueue:
+        async def run(self, *args):
+            raise BrowserBusy
+
+    monkeypatch.setattr(app.state, "browser_capacity", FullQueue(), raising=False)
+    response = client.get("/ping")
+
+    assert response.status_code == 503
+    assert response.headers["retry-after"] == "30"
+    mock_read.assert_not_called()
