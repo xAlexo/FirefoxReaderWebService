@@ -10,6 +10,8 @@ FastAPI web service that uses headless Camoufox — an anti-detect Firefox fork 
 | `GET /html?url=<url>` | Raw HTML — returns `{title, html}` without reader parsing |
 | `GET /ping` | Health check — opens example.com via Firefox, returns `{status: ok/error}` |
 
+Browser work is limited to three active requests and three waiting requests. Waiting requests time out after 30 seconds; overloaded requests return `503` with `Retry-After: 30`.
+
 ## Docker
 
 ```bash
