@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.12.9 (2026-10-13)
+
+### Bug Fixes
+
+- Cap concurrent browser launches ([#9](https://github.com/xAlexo/FirefoxReaderWebService/pull/9),
+  [`4926a2d`](https://github.com/xAlexo/FirefoxReaderWebService/commit/4926a2d91b35cd819989099b25f09f36fa1b3293))
+
+
 ## v0.12.8 (2026-09-24)
 
 ### Bug Fixes
