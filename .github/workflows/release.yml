@@ -68,6 +68,7 @@ jobs:
 
   Deploy:
     runs-on: [self-hosted, Linux, X64, firefox-reader-deploy]
+    environment: dokploy-cutover
     needs: Release
     if: ${{ needs.Release.outputs.released == 'true' }}
     concurrency:
