@@ -10,6 +10,8 @@ jobs:
   Release:
     runs-on: ubuntu-latest
     concurrency: release
+    outputs:
+      released: ${{ steps.semantic-release.outputs.released }}
     permissions:
       id-token: write
       contents: write
@@ -49,7 +51,7 @@ jobs:
         with:
           images: ghcr.io/xalexo/firefoxreaderwebservice
           tags: |
-            type=ref,event=tag
+            type=raw,value=${{ steps.semantic-release.outputs.tag }}
             type=raw,value=latest
 
       - name: Build and push Docker image
@@ -63,3 +65,35 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  Deploy:
+    runs-on: [self-hosted, Linux, X64, firefox-reader-deploy]
+    needs: Release
+    if: ${{ needs.Release.outputs.released == 'true' }}
+    concurrency:
+      group: dokploy-firefox-reader
+      cancel-in-progress: false
+    permissions:
+      contents: read
+
+    steps:
+      - name: Redeploy Dokploy Compose application
+        env:
+          DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+          DOKPLOY_COMPOSE_ID: ${{ vars.DOKPLOY_COMPOSE_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$DOKPLOY_API_KEY"
+          test -n "$DOKPLOY_COMPOSE_ID"
+          body="$(jq -cn --arg composeId "$DOKPLOY_COMPOSE_ID" '{composeId:$composeId}')"
+          status="$(
+            {
+            printf 'url = "https://dokploy.wcobs.com/api/compose.redeploy"\n'
+            printf 'header = "x-api-key: %s"\n' "$DOKPLOY_API_KEY"
+            printf 'fail\nsilent\nshow-error\n'
+            } | curl --config - --header 'Content-Type: application/json' \
+                --data-binary "$body" --max-time 60 --output /dev/null \
+                --write-out '%{http_code}'
+          )"
+          printf 'HTTP %s\n' "$status"
+          test "$status" = '200'
