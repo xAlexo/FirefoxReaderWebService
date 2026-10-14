@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.12.10 (2026-10-14)
+
+### Bug Fixes
+
+- Deploy Firefox Reader through Dokploy
+  ([`0134de7`](https://github.com/xAlexo/FirefoxReaderWebService/commit/0134de77ebd6da485845cd01402870c4440f1e69))
+
+
 ## v0.12.9 (2026-10-13)
 
 ### Bug Fixes
