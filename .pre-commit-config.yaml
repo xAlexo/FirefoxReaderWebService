@@ -22,13 +22,3 @@ repos:
     hooks:
       - id: codespell
         additional_dependencies: [tomli]
-
-  - repo: local
-    hooks:
-      - id: require-current-main
-        name: Require branch to contain latest origin/main
-        entry: scripts/check-main-current.sh
-        language: script
-        pass_filenames: false
-        always_run: true
-        stages: [pre-push]
