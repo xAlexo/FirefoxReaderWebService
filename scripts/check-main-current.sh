@@ -108,9 +108,9 @@ while IFS=$'\t' read -r remote_ref pushed_sha; do
     failed=1
     continue
   fi
-  if ! git merge-base --is-ancestor origin/main "$pushed_sha"; then
+  if ! git merge-base --is-ancestor refs/remotes/origin/main "$pushed_sha"; then
     printf 'Push blocked: %s does not contain the latest origin/main (%s). Merge or rebase origin/main, then retry.\n' \
-      "${remote_ref#refs/heads/}" "$(git rev-parse --short origin/main)" >&2
+      "${remote_ref#refs/heads/}" "$(git rev-parse --short refs/remotes/origin/main)" >&2
     failed=1
   fi
 done <<< "$branch_updates"
