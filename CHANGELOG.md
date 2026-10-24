@@ -1,6 +1,38 @@
 # CHANGELOG
 
 
+## v0.13.0 (2026-10-24)
+
+### Chores
+
+- Require approval for Firefox Reader Dokploy deployment
+  ([`afbf493`](https://github.com/xAlexo/FirefoxReaderWebService/commit/afbf4930d77d219bcc79078c028362f318c47d71))
+
+### Features
+
+- Reuse Camoufox browsers in bounded pool
+  ([#10](https://github.com/xAlexo/FirefoxReaderWebService/pull/10),
+  [`f2328d7`](https://github.com/xAlexo/FirefoxReaderWebService/commit/f2328d7550667866fb9eb39a3a03c3dc46659a53))
+
+* docs: specify persistent browser pool
+
+* refactor: extract reusable browser page reader
+
+* feat: reuse Camoufox browsers in bounded pool
+
+* fix: keep browser pool shutdown off the event loop
+
+* feat: serve endpoints through persistent browser pool
+
+* fix: keep page-close errors from masking request outcomes
+
+Guard page.close() in read_with_browser's finally so a cleanup failure logs instead of replacing a
+  successful result or the navigation error the pool retries on. Set .env.example
+  BROWSER_POOL_SIZE=1 for the declared 1 GiB Compose profile (runtime default stays 3) with RSS
+  guidance, fix the README browser-lifetime wording (recycle after 200 jobs or an operational
+  error), and record the ruling in the plan's Task 3 step.
+
+
 ## v0.12.10 (2026-10-14)
 
 ### Bug Fixes
