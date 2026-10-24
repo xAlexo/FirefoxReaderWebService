@@ -154,14 +154,20 @@ class BrowserPool:
             if self._closed:
                 return
             self._closed = True
-            # Sentinels sit behind every accepted job (FIFO), so each worker
-            # drains the queue, then closes its own browser and exits.
-            for _ in self._workers:
-                self._queue.put(None)
         if self._workers:
-            await asyncio.to_thread(self._join_workers)
+            # Sentinels sit behind every accepted job (FIFO), so each worker
+            # drains the queue, closes its own browser, then exits. put()
+            # blocks while the queue is full, so sentinel placement and joins
+            # run off the event loop — a sync put here would freeze the loop
+            # (and every in-flight request) until a busy worker frees a slot.
+            # The closed gate above guarantees nothing enqueues behind a
+            # sentinel, so the lock must NOT be held across the blocking puts
+            # (run() enqueues under it).
+            await asyncio.to_thread(self._stop_workers)
 
-    def _join_workers(self):
+    def _stop_workers(self):
+        for _ in self._workers:
+            self._queue.put(None)
         for worker in self._workers:
             worker.join()
 

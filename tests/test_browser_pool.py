@@ -18,6 +18,8 @@ W5: a queued job cancelled before start is skipped.
 W6: cancelling an active job leaves the worker and its browser intact.
 W7: shutdown drains accepted jobs and closes browsers on their owner threads.
 W8: after shutdown the pool accepts no new work; shutdown is idempotent.
+W9: shutdown keeps the event loop responsive while the queue is full, then
+    still drains accepted jobs and closes browsers on owner threads.
 
 S: pool size validation — explicit size, BROWSER_POOL_SIZE override, clear
    ValueError for non-integer, zero, and negative sizes; constants pinned.
@@ -26,6 +28,7 @@ S: pool size validation — explicit size, BROWSER_POOL_SIZE override, clear
 import asyncio
 import os
 import threading
+import time
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -451,6 +454,50 @@ class WorkerPoolTests(PoolTestCase):
 
         with self.assertRaises(RuntimeError):
             await pool.run('https://example.com', reader=False)
+
+    async def test_shutdown_keeps_event_loop_responsive_while_queue_is_full(self):
+        calls = []
+        started = threading.Event()
+        release = threading.Event()
+
+        def op(browser, url, reader=True):
+            calls.append(url)
+            started.set()
+            release.wait(2)
+            return {'title': url, 'content': 'x'}
+
+        self.install_op(op)
+        pool = await self.started_pool(size=1)
+        first = asyncio.create_task(pool.run('first'))
+        self.assertTrue(await asyncio.to_thread(started.wait, 2), 'the worker must be busy')
+
+        queued = [asyncio.create_task(pool.run(f'q{i}')) for i in range(3)]
+        await asyncio.sleep(0.05)  # three jobs parked: the queue is full
+
+        canary = asyncio.create_task(asyncio.sleep(0.05))
+        stopping = asyncio.create_task(pool.shutdown())
+        began = time.monotonic()
+        await asyncio.wait_for(canary, timeout=0.5)
+        self.assertLess(
+            time.monotonic() - began,
+            0.5,
+            'shutdown must not freeze the event loop while the queue is full',
+        )
+        self.assertFalse(stopping.done(), 'shutdown must still be draining accepted work')
+
+        release.set()
+        await asyncio.wait_for(stopping, timeout=5)
+        results = await asyncio.wait_for(asyncio.gather(first, *queued), timeout=5)
+        self.assertEqual(
+            [r['title'] for r in results],
+            ['first', 'q0', 'q1', 'q2'],
+            'accepted jobs must still drain after the freeze-free shutdown',
+        )
+        self.assertEqual(calls, ['first', 'q0', 'q1', 'q2'])
+        self.assertEqual(len(self.camoufox.launches), 1)
+        launch = self.camoufox.launches[0]
+        self.assertEqual((launch.enter_count, launch.exit_count), (1, 1))
+        self.assertEqual(launch.enter_thread, launch.exit_thread, 'browsers must close on their owning worker thread')
 
 
 class PoolSizeTests(unittest.TestCase):
