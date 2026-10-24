@@ -10,7 +10,7 @@ FastAPI web service that uses headless Camoufox — an anti-detect Firefox fork 
 | `GET /html?url=<url>` | Raw HTML — returns `{title, html}` without reader parsing |
 | `GET /ping` | Health check — opens example.com via Firefox, returns `{status: ok/error}` |
 
-Browser work is limited to three active requests and three waiting requests. Waiting requests time out after 30 seconds; overloaded requests return `503` with `Retry-After: 30`.
+Page fetches run on a pool of persistent browsers (`BROWSER_POOL_SIZE`, default `3`): each browser is recycled after 200 handled requests or an operational browser error, and gets a fresh page per request. When every browser is busy, up to 3 requests may wait; a request that waits longer than 30 seconds returns `503` with `Retry-After: 30`.
 
 ## Docker
 
@@ -28,6 +28,7 @@ The service runs Tor inside the container (not a sidecar). Firefox always routes
 | Variable | Description | Default |
 |---|---|---|
 | `SENTRY_DSN` | Sentry DSN for error tracking | — |
+| `BROWSER_POOL_SIZE` | Number of persistent browsers serving requests | `3` |
 | `TOR_PROXY` | Local Tor SOCKS5 — proxy for all Firefox requests | `socks5h://127.0.0.1:9050` |
 | `PROXIES` | External SOCKS5 (comma-separated, round-robin). Used for Tor bootstrap (`Socks5Proxy` in torrc) | — |
 | `PROXY_WHITELIST_HOSTS` | Hosts (comma-separated) routed through `PROXIES` instead of `TOR_PROXY` | — |

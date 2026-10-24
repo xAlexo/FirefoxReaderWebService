@@ -76,14 +76,75 @@ def _build_camoufox_kwargs():
     return kwargs
 
 
-def read_by_firefox(url, reader=True):
-    _log.debug(f'read_by_firefox: {url}')
-
-    # ponytail: browsers reject schemeless URLs (e.g. '2ip.ru') with
-    # InvalidArgumentError. Prepend 'http://' when no scheme is present.
-    # Matches Bugsink FIREFOX_READER_WEB_SERVICE-3 fix.
+def read_with_browser(browser, url, reader=True):
+    """Read one page via an already-open browser. Closes its page on success
+    and error. Raises PlaywrightError on operational failures — retries and
+    browser launch are the caller's job."""
     if '://' not in url:
         url = f'http://{url}'
+
+    page = browser.new_page()
+    try:
+        # ponytail: 30s ceiling — default navigation timeout is 300s.
+        # Keeping it explicit prevents the 120s+ hang observed in
+        # Bugsink FIREFOX_READER_WEB_SERVICE-1.
+        page.set_default_navigation_timeout(30_000)
+
+        _log.debug(f'Opening: {url}')
+        page.goto(url)
+
+        # ponytail: unlike Selenium, Playwright's goto can resolve
+        # an about:neterror page without raising (e.g. dead Tor
+        # node). Undetected, /ping and /ip would false-positive on
+        # Firefox's error page. Treat it as an operational failure.
+        if page.url.startswith('about:neterror'):
+            raise PlaywrightError(f'Reached error page: {page.url}')
+
+        _log.debug('Opened')
+
+        if reader:
+            # ponytail: 5s ceiling on the CDN load+parse — a hung
+            # jsdelivr request fails fast instead of blocking.
+            page.set_default_timeout(5_000)
+            try:
+                page.add_script_tag(url=READABILITY_URL)
+            except Exception as e:
+                _log.debug('Readability.js failed to load')
+                _log.debug(f'{e}')
+                return None
+
+            try:
+                result = page.evaluate(_READABILITY_PARSE)
+                if not result:
+                    _log.debug('Reader not found')
+                    return None
+                _log.debug('Reader found')
+                return json.loads(result)
+            except Exception as e:
+                _log.debug('Reader parse failed')
+                _log.debug(f'{e}')
+                return None
+
+        return {
+            # ponytail: page.title() returns '' when the page has no
+            # <title> tag, instead of raising — matches the Bugsink
+            # FIREFOX_READER_WEB_SERVICE-4 fix.
+            'title': page.title(),
+            'content': page.inner_html('body'),
+        }
+    finally:
+        # Cleanup must not mask the outcome: an error from page.close() must
+        # not replace a successful result nor the navigation error the pool
+        # retries on. A page that will not close leaks on the browser, which
+        # the 200-job recycle (browser_pool.RECYCLE_AFTER_JOBS) bounds.
+        try:
+            page.close()
+        except Exception as e:
+            _log.debug(f'page close failed: {e}')
+
+
+def read_by_firefox(url, reader=True):
+    _log.debug(f'read_by_firefox: {url}')
 
     for attempt in range(1, MAX_ATTEMPTS + 1):
         # ponytail: Camoufox() is a context manager — its __enter__ can raise
@@ -96,54 +157,7 @@ def read_by_firefox(url, reader=True):
         # guarantees browser close even when navigation raises.
         try:
             with Camoufox(**_build_camoufox_kwargs()) as browser:
-                page = browser.new_page()
-                # ponytail: 30s ceiling — default navigation timeout is 300s.
-                # Keeping it explicit prevents the 120s+ hang observed in
-                # Bugsink FIREFOX_READER_WEB_SERVICE-1.
-                page.set_default_navigation_timeout(30_000)
-
-                _log.debug(f'Opening: {url} (attempt {attempt}/{MAX_ATTEMPTS})')
-                page.goto(url)
-
-                # ponytail: unlike Selenium, Playwright's goto can resolve
-                # an about:neterror page without raising (e.g. dead Tor
-                # node). Undetected, /ping and /ip would false-positive on
-                # Firefox's error page. Treat it as an operational failure.
-                if page.url.startswith('about:neterror'):
-                    raise PlaywrightError(f'Reached error page: {page.url}')
-
-                _log.debug('Opened')
-
-                if reader:
-                    # ponytail: 5s ceiling on the CDN load+parse — a hung
-                    # jsdelivr request fails fast instead of blocking.
-                    page.set_default_timeout(5_000)
-                    try:
-                        page.add_script_tag(url=READABILITY_URL)
-                    except Exception as e:
-                        _log.debug('Readability.js failed to load')
-                        _log.debug(f'{e}')
-                        return None
-
-                    try:
-                        result = page.evaluate(_READABILITY_PARSE)
-                        if not result:
-                            _log.debug('Reader not found')
-                            return None
-                        _log.debug('Reader found')
-                        return json.loads(result)
-                    except Exception as e:
-                        _log.debug('Reader parse failed')
-                        _log.debug(f'{e}')
-                        return None
-
-                return {
-                    # ponytail: page.title() returns '' when the page has no
-                    # <title> tag, instead of raising — matches the Bugsink
-                    # FIREFOX_READER_WEB_SERVICE-4 fix.
-                    'title': page.title(),
-                    'content': page.inner_html('body'),
-                }
+                return read_with_browser(browser, url, reader=reader)
         except _OPERATIONAL_EXCEPTIONS as e:
             # Operational failures (timeout, neterror, closed context) — retry
             # on a fresh browser, no Sentry capture. These are expected in

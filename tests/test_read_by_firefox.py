@@ -28,16 +28,23 @@ PR1: TOR_PROXY='socks5h://...' → Playwright proxy dict gets server='socks5://.
 Warm-up scenarios S8/S9 were deleted with the warm-up navigation itself —
 entrypoint.sh already waits for Tor bootstrap 100% before the app starts.
 
+PW6: page.close() raising after a successful read → the result is returned,
+    not the cleanup error (cleanup must not mask the request outcome).
+PW7: goto raising PlaywrightError with page.close() also raising → the
+    original navigation error propagates, so the pool's retry/replacement
+    behavior keys off the real failure class.
+
 P8: Readability.js CDN load fails (add_script_tag timeout) → return None,
     NO Sentry capture, no retry (parse-phase failures return, not retry).
 P9: Readability parse returns null → return None, NO Sentry capture.
 P10: about:neterror on first attempt, normal page on second → data from 2nd
     attempt, NO Sentry capture (neterror path drives the retry).
 """
+
 import os
 from unittest.mock import MagicMock, patch
 
-os.environ.setdefault("SENTRY_DSN", "http://fake@localhost/1")
+os.environ.setdefault('SENTRY_DSN', 'http://fake@localhost/1')
 
 import pytest
 from playwright.sync_api import Error as PlaywrightError
@@ -64,10 +71,10 @@ def patched_camoufox():
     a fresh MagicMock is created automatically. `mock_cm.entered` /
     `mock_cm.exited` track every browser actually entered/exited.
     """
-    with patch("reader_web_service.read_by_firefox.Camoufox") as mock_cm:
-        mock_cm.browsers = []      # queue: tests pre-seed browsers here
-        mock_cm.entered = []       # history: every browser actually entered
-        mock_cm.exited = []        # history: every browser actually exited
+    with patch('reader_web_service.read_by_firefox.Camoufox') as mock_cm:
+        mock_cm.browsers = []  # queue: tests pre-seed browsers here
+        mock_cm.entered = []  # history: every browser actually entered
+        mock_cm.exited = []  # history: every browser actually exited
         mock_cm.enter_side_effect = None  # optional: [exc, ...] raise on __enter__ by index
 
         # Wire __enter__/__exit__ on the instance MagicMock returned by Camoufox().
@@ -98,7 +105,7 @@ def patched_camoufox():
         yield mock_cm
 
 
-def _good_page(title="Example Domain", content="<div>hi</div>", url="https://example.com"):
+def _good_page(title='Example Domain', content='<div>hi</div>', url='https://example.com'):
     """A mock page whose navigation succeeds and returns title/content."""
     p = MagicMock()
     p.url = url
@@ -110,7 +117,7 @@ def _good_page(title="Example Domain", content="<div>hi</div>", url="https://exa
 @pytest.fixture
 def sentry_spy():
     """Capture sentry_sdk.capture_exception calls."""
-    with patch("reader_web_service.read_by_firefox.sentry_sdk") as mock_sentry:
+    with patch('reader_web_service.read_by_firefox.sentry_sdk') as mock_sentry:
         yield mock_sentry.capture_exception
 
 
@@ -119,19 +126,18 @@ def test_navigation_timeout_not_captured_to_sentry(patched_camoufox, sentry_spy)
     Sentry capture, one browser per attempt, every attempt exited.
     """
     from reader_web_service.read_by_firefox import MAX_ATTEMPTS, read_by_firefox
+
     for _ in range(MAX_ATTEMPTS):
         b = MagicMock()
         page = MagicMock()
-        page.goto.side_effect = PlaywrightTimeoutError("Timeout 30000ms exceeded")
+        page.goto.side_effect = PlaywrightTimeoutError('Timeout 30000ms exceeded')
         b.new_page.return_value = page
         patched_camoufox.browsers.append(b)
-    result = read_by_firefox("https://example.com", reader=False)
+    result = read_by_firefox('https://example.com', reader=False)
     assert result is None
-    assert not sentry_spy.called, (
-        "Playwright TimeoutError is operational, not a bug — must not hit Sentry"
-    )
+    assert not sentry_spy.called, 'Playwright TimeoutError is operational, not a bug — must not hit Sentry'
     assert len(patched_camoufox.entered) == MAX_ATTEMPTS, (
-        f"should have tried {MAX_ATTEMPTS} times (one browser per attempt)"
+        f'should have tried {MAX_ATTEMPTS} times (one browser per attempt)'
     )
     assert len(patched_camoufox.exited) == MAX_ATTEMPTS, "every attempt's browser must be exited"
 
@@ -141,33 +147,33 @@ def test_closed_context_not_captured_to_sentry(patched_camoufox, sentry_spy):
     None, NO Sentry capture, retries exhausted.
     """
     from reader_web_service.read_by_firefox import MAX_ATTEMPTS, read_by_firefox
+
     for _ in range(MAX_ATTEMPTS):
         b = MagicMock()
         page = MagicMock()
-        page.goto.side_effect = PlaywrightError("Target page, context or browser has been closed")
+        page.goto.side_effect = PlaywrightError('Target page, context or browser has been closed')
         b.new_page.return_value = page
         patched_camoufox.browsers.append(b)
-    result = read_by_firefox("https://example.com", reader=False)
+    result = read_by_firefox('https://example.com', reader=False)
     assert result is None
-    assert not sentry_spy.called, (
-        "Playwright Error (closed context) is operational, not a bug — must not hit Sentry"
-    )
+    assert not sentry_spy.called, 'Playwright Error (closed context) is operational, not a bug — must not hit Sentry'
     assert len(patched_camoufox.entered) == MAX_ATTEMPTS
 
 
 def test_unexpected_exception_still_captured_to_sentry(patched_camoufox, sentry_spy):
     """S3: a non-operational exception still hits Sentry, and is NOT retried."""
     from reader_web_service.read_by_firefox import read_by_firefox
+
     b = MagicMock()
     page = MagicMock()
-    page.goto.side_effect = RuntimeError("genuinely unexpected")
+    page.goto.side_effect = RuntimeError('genuinely unexpected')
     b.new_page.return_value = page
     patched_camoufox.browsers.append(b)
-    result = read_by_firefox("https://example.com", reader=False)
+    result = read_by_firefox('https://example.com', reader=False)
     assert result is None
-    assert sentry_spy.called, "Unexpected errors must still be captured to Sentry"
-    assert sentry_spy.call_count == 1, "Unexpected errors must NOT be retried"
-    assert len(patched_camoufox.entered) == 1, "Unexpected errors must NOT retry"
+    assert sentry_spy.called, 'Unexpected errors must still be captured to Sentry'
+    assert sentry_spy.call_count == 1, 'Unexpected errors must NOT be retried'
+    assert len(patched_camoufox.entered) == 1, 'Unexpected errors must NOT retry'
 
 
 def test_operational_failure_then_success(patched_camoufox, sentry_spy):
@@ -178,20 +184,20 @@ def test_operational_failure_then_success(patched_camoufox, sentry_spy):
 
     bad = MagicMock()
     bad_page = MagicMock()
-    bad_page.goto.side_effect = PlaywrightTimeoutError("Timeout 30000ms exceeded")
+    bad_page.goto.side_effect = PlaywrightTimeoutError('Timeout 30000ms exceeded')
     bad.new_page.return_value = bad_page
     patched_camoufox.browsers.append(bad)
 
     good = MagicMock()
-    good.new_page.return_value = _good_page(title="Example Domain", content="<div>hi</div>")
+    good.new_page.return_value = _good_page(title='Example Domain', content='<div>hi</div>')
     patched_camoufox.browsers.append(good)
 
-    result = read_by_firefox("https://example.com", reader=False)
-    assert result is not None, "retry should have succeeded on 2nd attempt"
-    assert result["title"] == "Example Domain"
-    assert result["content"] == "<div>hi</div>"
-    assert not sentry_spy.called, "operational failures must not hit Sentry even before retry"
-    assert len(patched_camoufox.entered) == 2, "exactly 2 attempts (fail then succeed)"
+    result = read_by_firefox('https://example.com', reader=False)
+    assert result is not None, 'retry should have succeeded on 2nd attempt'
+    assert result['title'] == 'Example Domain'
+    assert result['content'] == '<div>hi</div>'
+    assert not sentry_spy.called, 'operational failures must not hit Sentry even before retry'
+    assert len(patched_camoufox.entered) == 2, 'exactly 2 attempts (fail then succeed)'
     assert len(patched_camoufox.exited) == 2, "both attempts' browsers must be exited"
 
 
@@ -201,18 +207,18 @@ def test_error_then_success(patched_camoufox, sentry_spy):
 
     bad = MagicMock()
     bad_page = MagicMock()
-    bad_page.goto.side_effect = PlaywrightError("Target closed")
+    bad_page.goto.side_effect = PlaywrightError('Target closed')
     bad.new_page.return_value = bad_page
     patched_camoufox.browsers.append(bad)
 
     good = MagicMock()
-    good.new_page.return_value = _good_page(title="Title", content="<p>body</p>")
+    good.new_page.return_value = _good_page(title='Title', content='<p>body</p>')
     patched_camoufox.browsers.append(good)
 
-    result = read_by_firefox("https://example.com", reader=False)
+    result = read_by_firefox('https://example.com', reader=False)
     assert result is not None
-    assert result["title"] == "Title"
-    assert result["content"] == "<p>body</p>"
+    assert result['title'] == 'Title'
+    assert result['content'] == '<p>body</p>'
     assert not sentry_spy.called
     assert len(patched_camoufox.entered) == 2
 
@@ -227,17 +233,15 @@ def test_schemeless_url_normalised_to_http(patched_camoufox, sentry_spy):
     from reader_web_service.read_by_firefox import read_by_firefox
 
     b = MagicMock()
-    page = _good_page(title="2IP", content="<body>2ip</body>", url="http://2ip.ru")
+    page = _good_page(title='2IP', content='<body>2ip</body>', url='http://2ip.ru')
     b.new_page.return_value = page
     patched_camoufox.browsers.append(b)
 
-    result = read_by_firefox("2ip.ru", reader=False)
-    assert result is not None, "schemeless URL should be normalised, not crash"
+    result = read_by_firefox('2ip.ru', reader=False)
+    assert result is not None, 'schemeless URL should be normalised, not crash'
     target_url = page.goto.call_args.args[0]
-    assert target_url == "http://2ip.ru", (
-        f"schemeless URL must be normalised to http:// — got {target_url!r}"
-    )
-    assert not sentry_spy.called, "normalised URL must not hit Sentry"
+    assert target_url == 'http://2ip.ru', f'schemeless URL must be normalised to http:// — got {target_url!r}'
+    assert not sentry_spy.called, 'normalised URL must not hit Sentry'
 
 
 def test_missing_title_returns_empty_no_sentry(patched_camoufox, sentry_spy):
@@ -249,16 +253,14 @@ def test_missing_title_returns_empty_no_sentry(patched_camoufox, sentry_spy):
     from reader_web_service.read_by_firefox import read_by_firefox
 
     b = MagicMock()
-    b.new_page.return_value = _good_page(title="", content="<p>body</p>")
+    b.new_page.return_value = _good_page(title='', content='<p>body</p>')
     patched_camoufox.browsers.append(b)
 
-    result = read_by_firefox("https://example.com", reader=False)
-    assert result is not None, "titleless page should still return content, not None"
-    assert result["title"] == "", "missing title → empty string, not crash"
-    assert result["content"] == "<p>body</p>"
-    assert not sentry_spy.called, (
-        "missing <title> is operational, not a bug — must not hit Sentry"
-    )
+    result = read_by_firefox('https://example.com', reader=False)
+    assert result is not None, 'titleless page should still return content, not None'
+    assert result['title'] == '', 'missing title → empty string, not crash'
+    assert result['content'] == '<p>body</p>'
+    assert not sentry_spy.called, 'missing <title> is operational, not a bug — must not hit Sentry'
 
 
 def test_neterror_on_target_retries_no_sentry(patched_camoufox, sentry_spy):
@@ -274,19 +276,15 @@ def test_neterror_on_target_retries_no_sentry(patched_camoufox, sentry_spy):
     for _ in range(MAX_ATTEMPTS):
         b = MagicMock()
         page = MagicMock()
-        page.url = "about:neterror?e=connectionFailure"
+        page.url = 'about:neterror?e=connectionFailure'
         b.new_page.return_value = page
         patched_camoufox.browsers.append(b)
 
-    result = read_by_firefox("https://example.com", reader=False)
+    result = read_by_firefox('https://example.com', reader=False)
 
-    assert result is None, "about:neterror must exhaust retries → None"
-    assert not sentry_spy.called, (
-        "about:neterror is operational (dead Tor node), not a bug — must not hit Sentry"
-    )
-    assert len(patched_camoufox.entered) == MAX_ATTEMPTS, (
-        f"should retry {MAX_ATTEMPTS} times (one browser per attempt)"
-    )
+    assert result is None, 'about:neterror must exhaust retries → None'
+    assert not sentry_spy.called, 'about:neterror is operational (dead Tor node), not a bug — must not hit Sentry'
+    assert len(patched_camoufox.entered) == MAX_ATTEMPTS, f'should retry {MAX_ATTEMPTS} times (one browser per attempt)'
     assert len(patched_camoufox.exited) == MAX_ATTEMPTS, "every attempt's browser must be exited"
 
 
@@ -302,24 +300,21 @@ def test_constructor_failure_retries_no_sentry(patched_camoufox, sentry_spy):
     from reader_web_service.read_by_firefox import read_by_firefox
 
     good = MagicMock()
-    good.new_page.return_value = _good_page(title="Example Domain", content="<div>hi</div>")
+    good.new_page.return_value = _good_page(title='Example Domain', content='<div>hi</div>')
     patched_camoufox.browsers.append(good)
 
     # First Camoufox().__enter__ raises (launch failure); second enters `good`.
-    patched_camoufox.enter_side_effect = [PlaywrightError("Failed to launch browser")]
+    patched_camoufox.enter_side_effect = [PlaywrightError('Failed to launch browser')]
 
-    result = read_by_firefox("https://example.com", reader=False)
+    result = read_by_firefox('https://example.com', reader=False)
 
-    assert result is not None, (
-        "constructor failure must retry on a fresh browser, not abort"
-    )
-    assert result["title"] == "Example Domain"
-    assert result["content"] == "<div>hi</div>"
+    assert result is not None, 'constructor failure must retry on a fresh browser, not abort'
+    assert result['title'] == 'Example Domain'
+    assert result['content'] == '<div>hi</div>'
     assert not sentry_spy.called, (
-        "PlaywrightError from the launch is operational (transient browser "
-        "startup), not a bug — must not hit Sentry"
+        'PlaywrightError from the launch is operational (transient browser startup), not a bug — must not hit Sentry'
     )
-    assert len(patched_camoufox.entered) == 1, "exactly 1 successful launch (2nd call)"
+    assert len(patched_camoufox.entered) == 1, 'exactly 1 successful launch (2nd call)'
     assert len(patched_camoufox.exited) == 1, "successful attempt's browser must be exited"
 
 
@@ -331,17 +326,15 @@ def test_readability_load_failure_returns_none_no_sentry(patched_camoufox, sentr
 
     b = MagicMock()
     page = _good_page()
-    page.add_script_tag.side_effect = PlaywrightTimeoutError("Timeout 5000ms exceeded")
+    page.add_script_tag.side_effect = PlaywrightTimeoutError('Timeout 5000ms exceeded')
     b.new_page.return_value = page
     patched_camoufox.browsers.append(b)
 
-    result = read_by_firefox("https://example.com", reader=True)
+    result = read_by_firefox('https://example.com', reader=True)
 
-    assert result is None, "Readability load failure must return None"
-    assert not sentry_spy.called, (
-        "CDN load failure is operational, not a bug — must not hit Sentry"
-    )
-    assert len(patched_camoufox.entered) == 1, "parse-phase failures must NOT retry"
+    assert result is None, 'Readability load failure must return None'
+    assert not sentry_spy.called, 'CDN load failure is operational, not a bug — must not hit Sentry'
+    assert len(patched_camoufox.entered) == 1, 'parse-phase failures must NOT retry'
 
 
 def test_readability_parse_none_returns_none_no_sentry(patched_camoufox, sentry_spy):
@@ -356,10 +349,10 @@ def test_readability_parse_none_returns_none_no_sentry(patched_camoufox, sentry_
     b.new_page.return_value = page
     patched_camoufox.browsers.append(b)
 
-    result = read_by_firefox("https://example.com", reader=True)
+    result = read_by_firefox('https://example.com', reader=True)
 
-    assert result is None, "reader-not-found must return None"
-    assert not sentry_spy.called, "reader-not-found is operational, not a bug"
+    assert result is None, 'reader-not-found must return None'
+    assert not sentry_spy.called, 'reader-not-found is operational, not a bug'
 
 
 def test_neterror_then_success(patched_camoufox, sentry_spy):
@@ -370,20 +363,20 @@ def test_neterror_then_success(patched_camoufox, sentry_spy):
 
     bad = MagicMock()
     bad_page = MagicMock()
-    bad_page.url = "about:neterror?e=connectionFailure"
+    bad_page.url = 'about:neterror?e=connectionFailure'
     bad.new_page.return_value = bad_page
     patched_camoufox.browsers.append(bad)
 
     good = MagicMock()
-    good.new_page.return_value = _good_page(title="Example Domain", content="<div>hi</div>")
+    good.new_page.return_value = _good_page(title='Example Domain', content='<div>hi</div>')
     patched_camoufox.browsers.append(good)
 
-    result = read_by_firefox("https://example.com", reader=False)
+    result = read_by_firefox('https://example.com', reader=False)
 
-    assert result is not None, "neterror on 1st attempt must retry and succeed on 2nd"
-    assert result["title"] == "Example Domain"
-    assert result["content"] == "<div>hi</div>"
-    assert not sentry_spy.called, "neterror retries are operational, not a bug"
+    assert result is not None, 'neterror on 1st attempt must retry and succeed on 2nd'
+    assert result['title'] == 'Example Domain'
+    assert result['content'] == '<div>hi</div>'
+    assert not sentry_spy.called, 'neterror retries are operational, not a bug'
     assert len(patched_camoufox.entered) == 2
 
 
@@ -399,8 +392,9 @@ def test_socks5h_scheme_normalised_for_playwright(monkeypatch, patched_camoufox)
     """
     import importlib
 
-    monkeypatch.setenv("TOR_PROXY", "socks5h://127.0.0.1:9050")
+    monkeypatch.setenv('TOR_PROXY', 'socks5h://127.0.0.1:9050')
     import reader_web_service.config
+
     importlib.reload(reader_web_service.config)
 
     from reader_web_service.read_by_firefox import read_by_firefox
@@ -409,14 +403,131 @@ def test_socks5h_scheme_normalised_for_playwright(monkeypatch, patched_camoufox)
     b.new_page.return_value = _good_page()
     patched_camoufox.browsers.append(b)
 
-    read_by_firefox("https://example.com", reader=False)
+    read_by_firefox('https://example.com', reader=False)
 
     launch_kwargs = patched_camoufox.call_args.kwargs
-    assert launch_kwargs["proxy"] == {"server": "socks5://127.0.0.1:9050"}, (
-        "socks5h scheme must be normalised to socks5 before reaching Playwright — "
-        "the Juggler driver treats unknown schemes as HTTP proxies"
+    assert launch_kwargs['proxy'] == {'server': 'socks5://127.0.0.1:9050'}, (
+        'socks5h scheme must be normalised to socks5 before reaching Playwright — '
+        'the Juggler driver treats unknown schemes as HTTP proxies'
     )
-    prefs = launch_kwargs["firefox_user_prefs"]
-    assert prefs.get("network.proxy.socks_remote_dns") is True, (
-        "remote-DNS semantics of socks5h must be preserved via the Firefox pref"
+    prefs = launch_kwargs['firefox_user_prefs']
+    assert prefs.get('network.proxy.socks_remote_dns') is True, (
+        'remote-DNS semantics of socks5h must be preserved via the Firefox pref'
     )
+
+
+def test_read_with_browser_raw_result_and_page_closed():
+    """PW1: read_with_browser returns the raw shape and closes its page on success."""
+
+    from reader_web_service.read_by_firefox import read_with_browser
+
+    b = MagicMock()
+    page = _good_page(title='T', content='<p>c</p>')
+    b.new_page.return_value = page
+
+    result = read_with_browser(b, 'https://example.com', reader=False)
+
+    assert result == {'title': 'T', 'content': '<p>c</p>'}
+    page.close.assert_called_once()
+
+
+def test_read_with_browser_reader_result():
+    """PW2: read_with_browser reader=True returns the parsed Readability JSON."""
+
+    import json
+
+    from reader_web_service.read_by_firefox import read_with_browser
+
+    b = MagicMock()
+    page = _good_page()
+    page.evaluate.return_value = json.dumps({'title': 'T', 'content': '<p>c</p>'})
+    b.new_page.return_value = page
+
+    result = read_with_browser(b, 'https://example.com', reader=True)
+
+    assert result == {'title': 'T', 'content': '<p>c</p>'}
+    page.close.assert_called_once()
+
+
+def test_read_with_browser_normalises_schemeless_url():
+    """PW3: schemeless URL is normalised to http:// by read_with_browser too."""
+
+    from reader_web_service.read_by_firefox import read_with_browser
+
+    b = MagicMock()
+    page = _good_page(url='http://2ip.ru')
+    b.new_page.return_value = page
+
+    read_with_browser(b, '2ip.ru', reader=False)
+    assert page.goto.call_args.args[0] == 'http://2ip.ru'
+
+
+def test_read_with_browser_closes_page_on_playwright_failure():
+    """PW4: page.goto raising PlaywrightError still closes the page and lets
+    the error propagate — no launch, no retry inside the helper."""
+
+    from reader_web_service.read_by_firefox import read_with_browser
+
+    b = MagicMock()
+    page = MagicMock()
+    page.goto.side_effect = PlaywrightError('Target closed')
+    b.new_page.return_value = page
+
+    with pytest.raises(PlaywrightError):
+        read_with_browser(b, 'https://example.com', reader=False)
+
+    page.close.assert_called_once()
+
+
+def test_read_with_browser_does_not_launch_browser():
+    """PW5: read_with_browser uses the passed browser only — no Camoufox launch."""
+
+    from reader_web_service import read_by_firefox as mod
+
+    b = MagicMock()
+    b.new_page.return_value = _good_page()
+
+    with patch.object(mod, 'Camoufox') as mock_cm:
+        mod.read_with_browser(b, 'https://example.com', reader=False)
+        assert not mock_cm.called, 'read_with_browser must not launch a browser'
+
+
+def test_page_close_failure_does_not_mask_result():
+    """PW6: page.close() raising after a successful read → the result is
+    returned, not the cleanup error. Cleanup failure is operational noise;
+    it must not turn a served page into a retry/None."""
+
+    from reader_web_service.read_by_firefox import read_with_browser
+
+    b = MagicMock()
+    page = _good_page(title='T', content='<p>c</p>')
+    page.close.side_effect = PlaywrightError('close failed')
+    b.new_page.return_value = page
+
+    result = read_with_browser(b, 'https://example.com', reader=False)
+
+    assert result == {'title': 'T', 'content': '<p>c</p>'}, (
+        'a page-close failure must not overwrite a successful result'
+    )
+    page.close.assert_called_once()
+
+
+def test_page_close_failure_does_not_mask_request_error():
+    """PW7: goto raises PlaywrightError and page.close() also raises → the
+    original navigation error propagates, not the cleanup error. The pool
+    retries/replaces browsers based on the navigation error's class; the
+    close error must not replace it."""
+
+    from reader_web_service.read_by_firefox import read_with_browser
+
+    b = MagicMock()
+    page = MagicMock()
+    page.goto.side_effect = PlaywrightError('Target closed')
+    page.close.side_effect = PlaywrightError('close failed too')
+    b.new_page.return_value = page
+
+    with pytest.raises(PlaywrightError) as exc_info:
+        read_with_browser(b, 'https://example.com', reader=False)
+
+    assert 'Target closed' in str(exc_info.value), 'the original navigation error must propagate, not the close error'
+    page.close.assert_called_once()
