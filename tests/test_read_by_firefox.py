@@ -28,6 +28,12 @@ PR1: TOR_PROXY='socks5h://...' → Playwright proxy dict gets server='socks5://.
 Warm-up scenarios S8/S9 were deleted with the warm-up navigation itself —
 entrypoint.sh already waits for Tor bootstrap 100% before the app starts.
 
+PW6: page.close() raising after a successful read → the result is returned,
+    not the cleanup error (cleanup must not mask the request outcome).
+PW7: goto raising PlaywrightError with page.close() also raising → the
+    original navigation error propagates, so the pool's retry/replacement
+    behavior keys off the real failure class.
+
 P8: Readability.js CDN load fails (add_script_tag timeout) → return None,
     NO Sentry capture, no retry (parse-phase failures return, not retry).
 P9: Readability parse returns null → return None, NO Sentry capture.
@@ -484,3 +490,44 @@ def test_read_with_browser_does_not_launch_browser():
     with patch.object(mod, 'Camoufox') as mock_cm:
         mod.read_with_browser(b, 'https://example.com', reader=False)
         assert not mock_cm.called, 'read_with_browser must not launch a browser'
+
+
+def test_page_close_failure_does_not_mask_result():
+    """PW6: page.close() raising after a successful read → the result is
+    returned, not the cleanup error. Cleanup failure is operational noise;
+    it must not turn a served page into a retry/None."""
+
+    from reader_web_service.read_by_firefox import read_with_browser
+
+    b = MagicMock()
+    page = _good_page(title='T', content='<p>c</p>')
+    page.close.side_effect = PlaywrightError('close failed')
+    b.new_page.return_value = page
+
+    result = read_with_browser(b, 'https://example.com', reader=False)
+
+    assert result == {'title': 'T', 'content': '<p>c</p>'}, (
+        'a page-close failure must not overwrite a successful result'
+    )
+    page.close.assert_called_once()
+
+
+def test_page_close_failure_does_not_mask_request_error():
+    """PW7: goto raises PlaywrightError and page.close() also raises → the
+    original navigation error propagates, not the cleanup error. The pool
+    retries/replaces browsers based on the navigation error's class; the
+    close error must not replace it."""
+
+    from reader_web_service.read_by_firefox import read_with_browser
+
+    b = MagicMock()
+    page = MagicMock()
+    page.goto.side_effect = PlaywrightError('Target closed')
+    page.close.side_effect = PlaywrightError('close failed too')
+    b.new_page.return_value = page
+
+    with pytest.raises(PlaywrightError) as exc_info:
+        read_with_browser(b, 'https://example.com', reader=False)
+
+    assert 'Target closed' in str(exc_info.value), 'the original navigation error must propagate, not the close error'
+    page.close.assert_called_once()

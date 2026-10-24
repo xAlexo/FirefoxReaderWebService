@@ -79,6 +79,6 @@
 - [ ] **Step 1: Update endpoint tests to inject a fake pool and assert existing response shapes, `/ping` fetch arguments, and HTTP 503 with `Retry-After: 30`.**
 - [ ] **Step 2: Run `uv run pytest tests/test_endpoints.py -q` and confirm the integration assertions fail against the current capacity implementation.**
 - [ ] **Step 3: Create and shut down `BrowserPool` in FastAPI lifespan; route all four endpoints through it and remove the old capacity limiter.**
-- [ ] **Step 4: Document `BROWSER_POOL_SIZE` (default 3) and update the browser-capacity description to persistent browsers.**
+- [ ] **Step 4: Document `BROWSER_POOL_SIZE` — the runtime code default remains 3; `.env.example` shows `1` for the declared low-memory Compose profile (1 GiB / 1 CPU), noting that pool sizes above one require measuring browser RSS under load and higher-limit deployments can override to 3. Update the browser-capacity description to persistent browsers.**
 - [ ] **Step 5: Run `uv run pytest -q`; all tests must pass, with no real browser/network activity.**
 - [ ] **Step 6: Commit as `feat: serve endpoints through persistent browser pool`.**

@@ -10,7 +10,7 @@ FastAPI web service that uses headless Camoufox — an anti-detect Firefox fork 
 | `GET /html?url=<url>` | Raw HTML — returns `{title, html}` without reader parsing |
 | `GET /ping` | Health check — opens example.com via Firefox, returns `{status: ok/error}` |
 
-Page fetches run on a pool of persistent browsers (`BROWSER_POOL_SIZE`, default `3`): each browser stays warm for the service's lifetime and gets a fresh page per request. When every browser is busy, up to 3 requests may wait; a request that waits longer than 30 seconds returns `503` with `Retry-After: 30`.
+Page fetches run on a pool of persistent browsers (`BROWSER_POOL_SIZE`, default `3`): each browser is recycled after 200 handled requests or an operational browser error, and gets a fresh page per request. When every browser is busy, up to 3 requests may wait; a request that waits longer than 30 seconds returns `503` with `Retry-After: 30`.
 
 ## Docker
 

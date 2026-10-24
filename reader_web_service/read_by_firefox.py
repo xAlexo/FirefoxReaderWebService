@@ -133,7 +133,14 @@ def read_with_browser(browser, url, reader=True):
             'content': page.inner_html('body'),
         }
     finally:
-        page.close()
+        # Cleanup must not mask the outcome: an error from page.close() must
+        # not replace a successful result nor the navigation error the pool
+        # retries on. A page that will not close leaks on the browser, which
+        # the 200-job recycle (browser_pool.RECYCLE_AFTER_JOBS) bounds.
+        try:
+            page.close()
+        except Exception as e:
+            _log.debug(f'page close failed: {e}')
 
 
 def read_by_firefox(url, reader=True):
