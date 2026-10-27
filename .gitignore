@@ -3,3 +3,27 @@
 .omo
 __pycache__/
 *.pyc
+
+# Local and generated files
+.env
+.omo/
+.worktree/
+.worktrees/
+graphify-out/
+*.tmp
+*.swp
+*~
+.DS_Store
+Thumbs.db
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+.coverage
+htmlcov/
+.idea/
