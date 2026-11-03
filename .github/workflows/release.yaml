@@ -6,12 +6,13 @@ on:
       - main
       - master
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
-    concurrency: release
-    outputs:
-      released: ${{ steps.semantic-release.outputs.released }}
     permissions:
       id-token: write
       contents: write
@@ -60,7 +61,7 @@ jobs:
         with:
           images: ghcr.io/xalexo/firefoxreaderwebservice
           tags: |
-            type=raw,value=${{ steps.semantic-release.outputs.tag }}
+            type=raw,value=${{ needs.release.outputs.tag }}
             type=raw,value=latest
 
       - name: Build and push Docker image
@@ -77,8 +78,8 @@ jobs:
   Deploy:
     runs-on: [self-hosted, Linux, X64, firefox-reader-deploy]
     environment: dokploy-cutover
-    needs: Release
-    if: ${{ needs.Release.outputs.released == 'true' }}
+    needs: [release, publish]
+    if: ${{ needs.release.outputs.released == 'true' }}
     concurrency:
       group: dokploy-firefox-reader
       cancel-in-progress: false
