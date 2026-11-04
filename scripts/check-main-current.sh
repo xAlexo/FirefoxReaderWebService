@@ -33,13 +33,27 @@ EOF
 }
 
 install_hook() {
-  local hook_path script_path
+  local hook_path script_path precommit_path tmp_path
   script_path=${BASH_SOURCE[0]}
   hook_path=$(git rev-parse --git-path hooks/pre-push)
   [[ $hook_path == /* ]] || hook_path="$PWD/$hook_path"
+  precommit_path="$hook_path.pre-commit"
 
   if [[ -L $hook_path ]]; then
     printf 'Refusing to replace symlinked pre-push hook: %s\n' "$hook_path" >&2
+    return 1
+  fi
+  if [[ -L $precommit_path ]]; then
+    printf 'Refusing to replace symlinked saved pre-commit hook: %s\n' "$precommit_path" >&2
+    return 1
+  fi
+  if [[ -e $precommit_path ]] && ! is_precommit_pre_push_shim "$precommit_path"; then
+    printf 'Refusing to replace unknown saved pre-push hook: %s\n' "$precommit_path" >&2
+    return 1
+  fi
+  if [[ -e $hook_path && -e $precommit_path ]] &&
+    ! cmp -s "$hook_path" "$script_path" && ! cmp -s "$hook_path" "$precommit_path"; then
+    printf 'Refusing to replace a pre-push hook that differs from its saved copy: %s\n' "$hook_path" >&2
     return 1
   fi
   if [[ -e $hook_path ]]; then
@@ -54,8 +68,15 @@ install_hook() {
   fi
 
   mkdir -p "$(dirname "$hook_path")"
-  cp "$script_path" "$hook_path"
-  chmod +x "$hook_path"
+  if [[ -e $hook_path && ! -e $precommit_path ]]; then
+    cp "$hook_path" "$precommit_path"
+    chmod +x "$precommit_path"
+  fi
+  tmp_path=$(mktemp "$hook_path.tmp.XXXXXX")
+  if ! cp "$script_path" "$tmp_path" || ! chmod +x "$tmp_path" || ! mv -f "$tmp_path" "$hook_path"; then
+    rm -f "$tmp_path"
+    return 1
+  fi
 }
 
 if [[ ${1:-} == --install ]]; then
@@ -67,15 +88,39 @@ if [[ ${1:-} == --install ]]; then
   exit
 fi
 
+precommit_path="${BASH_SOURCE[0]}.pre-commit"
+push_input=
+if [[ ( -e $precommit_path || -L $precommit_path ) && ! -x $precommit_path ]]; then
+  printf 'Saved pre-commit hook is not executable; refusing push: %s\n' "$precommit_path" >&2
+  exit 1
+fi
+if [[ -x $precommit_path ]]; then
+  # Keep the bytes for the pre-commit shim after this guard reads them.
+  push_input=$(cat; printf '\034')
+  push_input=${push_input%$'\034'}
+  exec 3<<< "$push_input"
+else
+  exec 3<&0
+fi
+
+run_precommit_hook() {
+  if [[ -x $precommit_path ]]; then
+    exec 3<&-
+    printf '%s' "$push_input" | "$precommit_path" "$@"
+    exit $?
+  fi
+  exit 0
+}
+
 if [[ $# -lt 1 ]]; then
   printf 'Cannot identify the push remote; refusing push.\n' >&2
   exit 1
 fi
-[[ $1 == origin ]] || exit 0
+[[ $1 == origin ]] || run_precommit_hook "$@"
 
 branch_updates=
 branch_count=0
-while IFS= read -r update || [[ -n $update ]]; do
+while IFS= read -r update <&3 || [[ -n $update ]]; do
   [[ -n $update ]] || continue
   local_ref=
   local_sha=
@@ -88,7 +133,13 @@ while IFS= read -r update || [[ -n $update ]]; do
     exit 1
   fi
   [[ $remote_ref == refs/heads/* ]] || continue
-  [[ $local_sha =~ ^0+$ ]] && continue
+  if [[ $local_sha =~ ^0+$ ]]; then
+    if [[ $remote_ref == refs/heads/main ]]; then
+      printf 'Push blocked: refusing to delete refs/heads/main.\n' >&2
+      exit 1
+    fi
+    continue
+  fi
   if [[ ! $local_sha =~ ^[[:xdigit:]]+$ || ! $remote_sha =~ ^[[:xdigit:]]+$ ]]; then
     printf 'Cannot verify pre-push update for %s; refusing push.\n' "$remote_ref" >&2
     exit 1
@@ -97,7 +148,7 @@ while IFS= read -r update || [[ -n $update ]]; do
   branch_count=$((branch_count + 1))
 done
 
-[[ $branch_count -gt 0 ]] || exit 0
+[[ $branch_count -gt 0 ]] || run_precommit_hook "$@"
 git fetch --quiet origin +refs/heads/main:refs/remotes/origin/main
 
 failed=0
@@ -115,4 +166,5 @@ while IFS=$'\t' read -r remote_ref pushed_sha; do
   fi
 done <<< "$branch_updates"
 
-exit "$failed"
+[[ $failed -eq 0 ]] || exit "$failed"
+run_precommit_hook "$@"

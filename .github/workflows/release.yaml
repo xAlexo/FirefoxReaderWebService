@@ -25,6 +25,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Test pre-push hook
+        run: bash tests/test_check_main_current.sh
+
       - name: Python Semantic Release
         id: semantic-release
         uses: python-semantic-release/python-semantic-release@v9
