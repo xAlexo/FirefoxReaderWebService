@@ -1,6 +1,55 @@
 # CHANGELOG
 
 
+## v0.13.1 (2026-11-04)
+
+### Bug Fixes
+
+- Protect main and preserve pre-push hooks
+  ([#16](https://github.com/xAlexo/FirefoxReaderWebService/pull/16),
+  [`c3f1ce6`](https://github.com/xAlexo/FirefoxReaderWebService/commit/c3f1ce661ebd7101132c95d4195fe9cae71cd9fa))
+
+* chore: add require-current-main pre-push hook
+
+* fix: check every branch update before push
+
+* fix: resolve origin main unambiguously
+
+* fix: protect main and preserve pre-push hooks
+
+### Chores
+
+- Enforce LF line endings ([#11](https://github.com/xAlexo/FirefoxReaderWebService/pull/11),
+  [`fbfe157`](https://github.com/xAlexo/FirefoxReaderWebService/commit/fbfe157618ee714ed546587f0d13a707c9ff8f26))
+
+- **deps**: Bump certifi from 2026.7.22 to 2026.10.18
+  ([#13](https://github.com/xAlexo/FirefoxReaderWebService/pull/13),
+  [`0aa2d5a`](https://github.com/xAlexo/FirefoxReaderWebService/commit/0aa2d5a2205cc6dd4edbab553dcf82c1a8d8c1b6))
+
+Bumps [certifi](https://github.com/certifi/python-certifi) from 2026.7.22 to 2026.10.18. -
+  [Commits](https://github.com/certifi/python-certifi/compare/2026.07.22...2026.10.18)
+
+--- updated-dependencies: - dependency-name: certifi dependency-version: 2026.10.18
+
+dependency-type: indirect ...
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+### Continuous Integration
+
+- Serialize release workflow publishing
+  ([#12](https://github.com/xAlexo/FirefoxReaderWebService/pull/12),
+  [`3ba33a0`](https://github.com/xAlexo/FirefoxReaderWebService/commit/3ba33a0c5214cb0bf01fd7bd21202d5ca833f997))
+
+* chore: ignore local and generated files
+
+* ci: split firefox-reader release workflow into release and publish
+
+* ci: serialize release workflow publishing
+
+
 ## v0.13.0 (2026-10-24)
 
 ### Chores
