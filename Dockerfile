@@ -38,9 +38,15 @@ RUN mkdir -p /etc/tor /var/lib/tor /var/log/tor \
 WORKDIR /app
 COPY --from=builder /app /app
 
-# Fetch the camoufox browser binary into the image (~633MB layer, cached by buildx).
+# Fetch the camoufox browser binary into the image (cached by buildx).
 # Must run after the builder copy — the venv from the builder provides `camoufox`.
-RUN python -m camoufox fetch
+# The launch pins os='linux', so the macOS-only (M), macOS/Windows (MW) and
+# Windows-only (W) font groups are never read; dropping them saves ~1.5GB.
+# See fonts/groups.json → readBy.lin.
+RUN python -m camoufox fetch \
+    && rm -rf /root/.cache/camoufox/browsers/*/*/fonts/M \
+              /root/.cache/camoufox/browsers/*/*/fonts/MW \
+              /root/.cache/camoufox/browsers/*/*/fonts/W
 
 COPY torrc /etc/tor/torrc
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
