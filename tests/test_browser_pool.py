@@ -145,6 +145,8 @@ class FakeCamoufoxPoolTests(PoolTestCase):
         self.assertFalse(launch.exited, 'a healthy browser must stay open for the next request')
         # launch kwargs still flow through the existing Camoufox kwargs helper
         self.assertTrue(self.camoufox.kwargs[0].get('headless'))
+        # the image only ships Linux font groups, so the claimed OS must be Linux
+        self.assertEqual(self.camoufox.kwargs[0].get('os'), 'linux')
         self.assertFalse(self.sentry.capture_exception.called)
 
     async def test_every_request_gets_a_fresh_closed_page(self):

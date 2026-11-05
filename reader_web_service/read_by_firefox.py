@@ -46,7 +46,8 @@ def _build_camoufox_kwargs():
     via ``network.proxy.socks_remote_dns = true`` so name resolution happens
     at the Tor proxy, preventing DNS leaks.
     """
-    kwargs = {'headless': True, 'block_images': True, 'i_know_what_im_doing': True}
+    # The Docker image ships only the Linux font groups (see Dockerfile).
+    kwargs = {'headless': True, 'block_images': True, 'i_know_what_im_doing': True, 'os': 'linux'}
 
     proxy = get_proxy_for_host('')
     if proxy:
