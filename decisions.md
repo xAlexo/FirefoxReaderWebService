@@ -20,3 +20,11 @@
 - Rationale: Keep both branch protection and existing pre-push checks active.
 - Decided by: User.
 - Consequences: Installation remains manual; the release workflow runs the shell regression suite before semantic-release.
+
+## 2026-11-11 — Make the browser queue depth configurable
+
+- Context: The waiting queue was fixed at 3 jobs, while `BROWSER_POOL_SIZE` was already configurable. A Dokploy deployment set `BROWSER_QUEUE_SIZE=12`; the pool ignored it and still rejected the seventh concurrent request with HTTP 503, because the value was a module constant.
+- Decision: Read the queue depth from `BROWSER_QUEUE_SIZE` (default 3), validate it as a positive integer, and keep the constant as the code default.
+- Rationale: Burst capacity needs both knobs together, and an env var that is silently ignored is worse than no env var.
+- Decided by: User.
+- Consequences: Waiting jobs cost no browser memory (a URL and a future), so a larger queue is cheap. Waiting time stays capped by `BROWSER_QUEUE_TIMEOUT_SECONDS = 30`; a request no worker starts within that window still gets HTTP 503.

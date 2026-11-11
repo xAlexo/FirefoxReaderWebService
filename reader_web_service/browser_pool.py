@@ -23,7 +23,7 @@ from reader_web_service.read_by_firefox import (
     read_with_browser,
 )
 
-BROWSER_QUEUE_SIZE = 3
+BROWSER_QUEUE_SIZE = 3  # default waiting jobs; BROWSER_QUEUE_SIZE env overrides
 BROWSER_QUEUE_TIMEOUT_SECONDS = 30
 RECYCLE_AFTER_JOBS = 200
 
@@ -45,6 +45,18 @@ def _validated_size(size):
             raise ValueError(f'BROWSER_POOL_SIZE must be an integer, got {raw!r}') from None
     if not isinstance(size, int) or size < 1:
         raise ValueError(f'BrowserPool size must be a positive integer, got {size!r}')
+    return size
+
+
+def _validated_queue_size():
+    """Resolve the waiting-queue depth from ``BROWSER_QUEUE_SIZE`` (default 3)."""
+    raw = os.getenv('BROWSER_QUEUE_SIZE', str(BROWSER_QUEUE_SIZE))
+    try:
+        size = int(raw)
+    except ValueError:
+        raise ValueError(f'BROWSER_QUEUE_SIZE must be an integer, got {raw!r}') from None
+    if size < 1:
+        raise ValueError(f'BROWSER_QUEUE_SIZE must be a positive integer, got {size!r}')
     return size
 
 
@@ -108,9 +120,10 @@ class BrowserPool:
 
     def __init__(self, size=None):
         self.size = _validated_size(size)
+        self.queue_size = _validated_queue_size()
         # Workers take a job out of the queue the moment they start it, so
         # maxsize bounds only waiting (not-yet-started) jobs.
-        self._queue = queue.Queue(maxsize=BROWSER_QUEUE_SIZE)
+        self._queue = queue.Queue(maxsize=self.queue_size)
         self._workers = []
         self._enqueue_lock = threading.Lock()  # makes "pool closed" atomic with enqueue
         self._closed = False

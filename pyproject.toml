@@ -35,3 +35,7 @@ target-version = "py313"
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "UP"]
 ignore = ["BLE001"]  # blind except — intentional for sentry capture
+
+[tool.codespell]
+# readBy.lin is a key path in the Camoufox fonts/groups.json bundle.
+ignore-words-list = "readby"

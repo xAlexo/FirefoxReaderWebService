@@ -503,7 +503,7 @@ class WorkerPoolTests(PoolTestCase):
 
 
 class PoolSizeTests(unittest.TestCase):
-    """Size validation: explicit size, BROWSER_POOL_SIZE override, clear errors."""
+    """Size validation: explicit size, env overrides, clear errors."""
 
     def test_operational_constants_pinned(self):
         self.assertEqual(browser_pool.BROWSER_QUEUE_SIZE, 3)
@@ -514,6 +514,22 @@ class PoolSizeTests(unittest.TestCase):
     def test_default_size_is_three(self):
         with patch.dict(os.environ, {}, clear=True):
             self.assertEqual(BrowserPool().size, 3)
+
+    def test_default_queue_size_is_three(self):
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(BrowserPool().queue_size, 3)
+
+    def test_env_queue_size_used(self):
+        with patch.dict(os.environ, {'BROWSER_QUEUE_SIZE': '12'}):
+            pool = BrowserPool()
+            self.assertEqual(pool.queue_size, 12)
+            self.assertEqual(pool._queue.maxsize, 12)
+
+    def test_env_invalid_queue_sizes_rejected(self):
+        for bad in ('0', '-2', 'abc', '1.5', ''):
+            with patch.dict(os.environ, {'BROWSER_QUEUE_SIZE': bad}):
+                with self.assertRaises(ValueError):
+                    BrowserPool()
 
     def test_env_size_used_when_explicit_absent(self):
         with patch.dict(os.environ, {'BROWSER_POOL_SIZE': '2'}):
