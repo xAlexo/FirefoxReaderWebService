@@ -1,6 +1,66 @@
 # CHANGELOG
 
 
+## v0.13.2 (2026-11-11)
+
+### Bug Fixes
+
+- Read browser queue depth from BROWSER_QUEUE_SIZE
+  ([#18](https://github.com/xAlexo/FirefoxReaderWebService/pull/18),
+  [`9389df3`](https://github.com/xAlexo/FirefoxReaderWebService/commit/9389df3f905942ad06ab9a6fb399252a7662b592))
+
+The waiting queue was a module constant, so BROWSER_QUEUE_SIZE in the deployment environment was
+  silently ignored and the pool still rejected the seventh concurrent request. Resolve it the same
+  way as BROWSER_POOL_SIZE, reject non-positive values, and document the knob.
+
+Add a codespell ignore for readBy.lin, a real Camoufox key path.
+
+### Build System
+
+- **docker**: Drop non-Linux camoufox font groups
+  ([#17](https://github.com/xAlexo/FirefoxReaderWebService/pull/17),
+  [`6b48494`](https://github.com/xAlexo/FirefoxReaderWebService/commit/6b48494b31c5104b0d0814bcfa3a3ea72b89f0e7))
+
+Pin the claimed browser OS to Linux and delete the macOS/Windows font groups from the image. Shrinks
+  the image from 3.28GB to 2.08GB.
+
+### Chores
+
+- **deps**: Bump urllib3 from 2.7.0 to 2.8.0
+  ([#14](https://github.com/xAlexo/FirefoxReaderWebService/pull/14),
+  [`1f91f92`](https://github.com/xAlexo/FirefoxReaderWebService/commit/1f91f92f4972ab69a6532614149e71c5e85729a3))
+
+Bumps [urllib3](https://github.com/urllib3/urllib3) from 2.7.0 to 2.8.0. - [Release
+  notes](https://github.com/urllib3/urllib3/releases) -
+  [Changelog](https://github.com/urllib3/urllib3/blob/main/CHANGES.rst) -
+  [Commits](https://github.com/urllib3/urllib3/compare/2.7.0...2.8.0)
+
+--- updated-dependencies: - dependency-name: urllib3 dependency-version: 2.8.0
+
+dependency-type: indirect ...
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+- **deps-dev**: Bump pytest from 8.4.2 to 9.0.3
+  ([#15](https://github.com/xAlexo/FirefoxReaderWebService/pull/15),
+  [`4e998b0`](https://github.com/xAlexo/FirefoxReaderWebService/commit/4e998b05c370eadada58ef530af3094d56685336))
+
+Bumps [pytest](https://github.com/pytest-dev/pytest) from 8.4.2 to 9.0.3. - [Release
+  notes](https://github.com/pytest-dev/pytest/releases) -
+  [Changelog](https://github.com/pytest-dev/pytest/blob/main/CHANGELOG.rst) -
+  [Commits](https://github.com/pytest-dev/pytest/compare/8.4.2...9.0.3)
+
+--- updated-dependencies: - dependency-name: pytest dependency-version: 9.0.3
+
+dependency-type: direct:development ...
+
+Signed-off-by: dependabot[bot] <support@github.com>
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+
+
 ## v0.13.1 (2026-11-04)
 
 ### Bug Fixes
